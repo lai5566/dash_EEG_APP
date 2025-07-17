@@ -7,6 +7,11 @@ from typing import Dict, List, Tuple, Optional
 from scipy import signal
 from scipy.fft import fft, fftfreq
 import logging
+import sys
+import os
+# 添加配置文件路徑
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
+from app_config import FFT_TEST_DATA_CONFIG
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -263,14 +268,21 @@ class RealTimeEEGProcessor:
         with self.lock:
             if not self.is_buffer_full and self.buffer_index < 100:
                 # 生成測試用的假資料 (當沒有足夠真實資料時)
-                t = np.linspace(0, 4, len(self.buffer))
+                # 修正: 使用正確的時間長度 (樣本數/採樣率)
+                duration = len(self.buffer) / self.processor.sample_rate
+                t = np.linspace(0, duration, len(self.buffer))
+                
+                # 使用配置文件中的振幅和頻率設定
+                amps = FFT_TEST_DATA_CONFIG['amplitudes']
+                freqs = FFT_TEST_DATA_CONFIG['frequencies']
+                
                 test_data = (
-                    0.8 * np.sin(2 * np.pi * 2 * t) +     # 2Hz Delta波
-                    0.6 * np.sin(2 * np.pi * 6 * t) +     # 6Hz Theta波  
-                    0.4 * np.sin(2 * np.pi * 10 * t) +    # 10Hz Alpha波
-                    0.3 * np.sin(2 * np.pi * 20 * t) +    # 20Hz Beta波
-                    0.2 * np.sin(2 * np.pi * 40 * t) +    # 40Hz Gamma波
-                    0.1 * np.random.randn(len(self.buffer))  # 雜訊
+                    amps['delta'] * np.sin(2 * np.pi * freqs['delta'] * t) +     # Delta波
+                    amps['theta'] * np.sin(2 * np.pi * freqs['theta'] * t) +     # Theta波  
+                    amps['alpha'] * np.sin(2 * np.pi * freqs['alpha'] * t) +     # Alpha波
+                    amps['beta'] * np.sin(2 * np.pi * freqs['beta'] * t) +       # Beta波
+                    amps['gamma'] * np.sin(2 * np.pi * freqs['gamma'] * t) +     # Gamma波
+                    amps['noise'] * np.random.randn(len(self.buffer))           # 雜訊
                 )
                 return test_data
             

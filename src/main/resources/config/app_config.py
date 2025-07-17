@@ -49,6 +49,25 @@ PROCESSING_CONFIG = {
     'signal_quality_poor_threshold': 50.0,  # 小於此值為差品質
 }
 
+# FFT測試資料設定
+FFT_TEST_DATA_CONFIG = {
+    'amplitudes': {
+        'delta': 0.15,    # 2Hz Delta波振幅
+        'theta': 0.12,    # 6Hz Theta波振幅
+        'alpha': 0.10,    # 10Hz Alpha波振幅
+        'beta': 0.08,     # 20Hz Beta波振幅
+        'gamma': 0.05,    # 40Hz Gamma波振幅
+        'noise': 0.02     # 雜訊振幅
+    },
+    'frequencies': {
+        'delta': 2.0,     # Delta波頻率
+        'theta': 6.0,     # Theta波頻率
+        'alpha': 10.0,    # Alpha波頻率
+        'beta': 20.0,     # Beta波頻率
+        'gamma': 40.0     # Gamma波頻率
+    }
+}
+
 # 資料匯出設定
 EXPORT_CONFIG = {
     'formats': ['csv', 'json', 'mat', 'edf'],
