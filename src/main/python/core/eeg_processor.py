@@ -248,6 +248,8 @@ class RealTimeEEGProcessor:
     """具有循環緩衝區的即時EEG處理器"""
     
     def __init__(self, sample_rate: int = 512, window_size: int = 1024):
+        self.sample_rate = sample_rate
+        self.window_size = window_size
         self.processor = EEGProcessor(sample_rate, window_size)
         self.buffer = np.zeros(window_size)
         self.buffer_index = 0
@@ -269,7 +271,7 @@ class RealTimeEEGProcessor:
             if not self.is_buffer_full and self.buffer_index < 100:
                 # 生成測試用的假資料 (當沒有足夠真實資料時)
                 # 修正: 使用正確的時間長度 (樣本數/採樣率)
-                duration = len(self.buffer) / self.processor.sample_rate
+                duration = len(self.buffer) / self.sample_rate
                 t = np.linspace(0, duration, len(self.buffer))
                 
                 # 使用配置文件中的振幅和頻率設定
