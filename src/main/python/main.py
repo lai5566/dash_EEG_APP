@@ -22,7 +22,7 @@ from api.eeg_api import create_app
 from ui.dash_app import EEGDashboardApp
 from utils.data_utils import DataValidator, DataExporter
 from resources.config.app_config import (
-    APP_CONFIG, API_CONFIG, DATABASE_PATH, USE_MOCK_DATA
+    APP_CONFIG, API_CONFIG, DATABASE_PATH, USE_MOCK_DATA, PROCESSING_CONFIG
 )
 from resources.config.audio_config import AUDIO_CONFIG
 
@@ -53,6 +53,10 @@ class EEGApplication:
         self.web_thread = None
         self.data_thread = None
         self.running = False
+        
+        # 日誌速率限制
+        self.last_log_time = {}
+        self.log_interval = 5.0  # 每5秒最多記錄一次相同警告
         
     def initialize(self):
         """初始化應用程式組件"""
@@ -263,22 +267,42 @@ class EEGApplication:
         except Exception as e:
             logger.error(f"Error processing serial data: {e}")
     
+    def _should_log(self, message_key: str) -> bool:
+        """檢查是否應該記錄訊息(速率限制)"""
+        current_time = time.time()
+        if message_key not in self.last_log_time:
+            self.last_log_time[message_key] = current_time
+            return True
+        elif current_time - self.last_log_time[message_key] >= self.log_interval:
+            self.last_log_time[message_key] = current_time
+            return True
+        return False
+
     def _handle_processed_data(self, processed_data: Dict[str, Any]):
         """處理已處理的EEG資料"""
         try:
-            # 記錄信號品質
+            # 記錄信號品質 (修正邏輯: 高分數=好品質)
             if 'signal_quality' in processed_data:
                 quality = processed_data['signal_quality']
-                if quality < 50:
-                    logger.debug(f"Good signal quality: {quality:.1f}")
+                good_threshold = PROCESSING_CONFIG['signal_quality_good_threshold']
+                poor_threshold = PROCESSING_CONFIG['signal_quality_poor_threshold']
+                
+                if quality > good_threshold:
+                    if self._should_log('good_signal'):
+                        logger.debug(f"Good signal quality: {quality:.1f}")
+                elif quality < poor_threshold:
+                    if self._should_log('poor_signal'):
+                        logger.warning(f"Poor signal quality: {quality:.1f}")
                 else:
-                    logger.warning(f"Poor signal quality: {quality:.1f}")
+                    if self._should_log('fair_signal'):
+                        logger.info(f"Fair signal quality: {quality:.1f}")
             
-            # 檢查偽影
+            # 檢查偽影 (加入速率限制)
             if 'artifacts' in processed_data:
                 artifacts = processed_data['artifacts']
                 if len(artifacts) > 0:
-                    logger.info(f"Artifacts detected: {len(artifacts)} points")
+                    if self._should_log('artifacts'):
+                        logger.info(f"Artifacts detected: {len(artifacts)} points")
             
         except Exception as e:
             logger.error(f"Error handling processed data: {e}")

@@ -1,4 +1,4 @@
-u.3"""應用程式配置設定"""
+"應用程式配置設定"""
 
 import os
 
@@ -30,7 +30,7 @@ DATABASE_WRITE_INTERVAL = 2.0  # 秒
 
 # 使用者介面設定
 UI_CONFIG = {
-    'title': "優化版響應式EEG監控系統",
+    'title': "EEG監控系統",
     'max_points': 20,
     'chart_height': 400,
     'update_interval': 300,  # 毫秒 (aligned with B.py)
@@ -45,6 +45,8 @@ PROCESSING_CONFIG = {
     'notch_frequencies': [50, 60],
     'window_functions': ['hanning', 'hamming', 'blackman'],
     'default_window': 'hanning',
+    'signal_quality_good_threshold': 70.0,  # 大於此值為良好品質
+    'signal_quality_poor_threshold': 50.0,  # 小於此值為差品質
 }
 
 # 資料匯出設定
