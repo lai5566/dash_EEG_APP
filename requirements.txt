@@ -5,8 +5,8 @@ pandas
 matplotlib
 plotly
 dash
-dash-bootstrap-components>=1.0.0
-flask>=2.0.0
+dash-bootstrap-components
+flask
 flask-cors>=3.0.0
 
 # Data processing

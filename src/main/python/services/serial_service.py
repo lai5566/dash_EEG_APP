@@ -154,14 +154,17 @@ def enhanced_serial_worker(out_queue: multiprocessing.Queue):
 
 def mock_serial_worker(out_queue: multiprocessing.Queue):
     """測試用模擬序列埠工作程序"""
+    sample_count = 0
+    
     while True:
         try:
             # 生成模擬資料
             timestamp = time.time()
 
-            # 模擬原始資料
+            # 模擬原始資料 - 生成單個樣本值
             raw_value = random.uniform(-0.001, 0.001)
             out_queue.put({'raw_value': raw_value, 'timestamp': timestamp})
+            sample_count += 1
 
             # 隨機認知資料
             if random.random() < 0.1:  # 10% chance
@@ -175,8 +178,8 @@ def mock_serial_worker(out_queue: multiprocessing.Queue):
                     'timestamp': timestamp
                 })
 
-            # 隨機ASIC資料
-            if random.random() < 0.30:  # 30% chance (increased from 5%)
+            # 隨機ASIC資料 - 降低頻率，確保數據更新同步
+            if random.random() < 0.05:  # 5% chance - 降低頻率避免過度產生
                 asic_bands = [random.randint(10, 100) for _ in range(8)]
                 print(f"[ASIC DEBUG] MockWorker: Generated ASIC bands: {asic_bands}")
                 out_queue.put({'asic_bands': asic_bands, 'timestamp': timestamp})
@@ -186,7 +189,7 @@ def mock_serial_worker(out_queue: multiprocessing.Queue):
                 blink_intensity = random.randint(50, 200)
                 out_queue.put({'blink': blink_intensity, 'timestamp': timestamp})
 
-            time.sleep(0.02)  # 50Hz更新頁率
+            time.sleep(0.02)  # 50Hz更新頻率
 
         except Exception as e:
             print(f"[mock_serial_worker] Error: {e}")

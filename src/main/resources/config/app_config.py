@@ -6,9 +6,9 @@ import os
 APP_CONFIG = {
     'name': 'EEG Dashboard Application',
     'version': '1.0.0',
-    'buffer_size': 2048,
+    'buffer_size': 1024,  # 減少緩衝區大小以適應Pi4
     'sample_rate': 512,
-    'window_size': 1024,
+    'window_size': 512,   # 減少窗口大小以提高性能
     'max_recording_duration': 3600,  # 1小時
 }
 
@@ -18,9 +18,9 @@ API_CONFIG = {
     'port': 8052,
     'debug': False,
     'threaded': True,
-    'buffer_size': 2048,
+    'buffer_size': 1024,  # 與APP_CONFIG保持一致
     'sample_rate': 512,
-    'window_size': 1024,
+    'window_size': 512,   # 與APP_CONFIG保持一致
 }
 
 # 資料庫設定
@@ -31,9 +31,9 @@ DATABASE_WRITE_INTERVAL = 2.0  # 秒
 # 使用者介面設定
 UI_CONFIG = {
     'title': "EEG監控系統",
-    'max_points': 20,
-    'chart_height': 400,
-    'update_interval': 300,  # 毫秒 (aligned with B.py)
+    'max_points': 15,        # 減少最大顯示點數
+    'chart_height': 350,     # 減少圖表高度以節省渲染資源
+    'update_interval': 500,  # 增加更新間隔（毫秒）適應Pi4性能
     'theme': 'light',
 }
 
@@ -76,6 +76,19 @@ EXPORT_CONFIG = {
     'max_export_duration': 3600,  # 1小時
 }
 
+# 平台檢測和優化設定
+PLATFORM_CONFIG = {
+    'is_raspberry_pi': os.path.exists('/proc/device-tree/model'),
+    'raspberry_pi_optimizations': {
+        'buffer_size': 512,        # 更小的緩衝區
+        'window_size': 256,        # 更小的窗口
+        'update_interval': 750,    # 更長的更新間隔
+        'chart_height': 300,       # 更小的圖表
+        'max_points': 10,          # 更少的顯示點
+        'reduced_processing': True  # 啟用簡化處理
+    }
+}
+
 # 全域狀態
 USE_MOCK_DATA = True  # 暫時啟用以測試ASIC功能
 RECORDING_STATE = {
@@ -99,3 +112,37 @@ LOGGING_CONFIG = {
 os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
 os.makedirs(EXPORT_CONFIG['output_directory'], exist_ok=True)
 os.makedirs(os.path.dirname(LOGGING_CONFIG['file']), exist_ok=True)
+
+# 平台優化應用函數
+def apply_platform_optimizations():
+    """根據平台自動應用優化設定"""
+    if PLATFORM_CONFIG['is_raspberry_pi']:
+        print("🍓 檢測到樹莓派平台，應用性能優化...")
+        
+        # 應用樹莓派優化設定
+        optimizations = PLATFORM_CONFIG['raspberry_pi_optimizations']
+        
+        # 更新應用配置
+        APP_CONFIG['buffer_size'] = optimizations['buffer_size']
+        APP_CONFIG['window_size'] = optimizations['window_size']
+        
+        # 更新API配置
+        API_CONFIG['buffer_size'] = optimizations['buffer_size']
+        API_CONFIG['window_size'] = optimizations['window_size']
+        
+        # 更新UI配置
+        UI_CONFIG['update_interval'] = optimizations['update_interval']
+        UI_CONFIG['chart_height'] = optimizations['chart_height']
+        UI_CONFIG['max_points'] = optimizations['max_points']
+        
+        print(f"✅ 已應用樹莓派優化設定:")
+        print(f"   - 緩衝區大小: {optimizations['buffer_size']}")
+        print(f"   - 窗口大小: {optimizations['window_size']}")
+        print(f"   - 更新間隔: {optimizations['update_interval']}ms")
+        print(f"   - 圖表高度: {optimizations['chart_height']}")
+        print(f"   - 最大顯示點: {optimizations['max_points']}")
+    else:
+        print("💻 檢測到標準平台，使用默認設定")
+
+# 自動應用平台優化
+apply_platform_optimizations()

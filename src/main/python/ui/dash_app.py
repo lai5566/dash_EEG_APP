@@ -249,15 +249,32 @@ class EEGDashboardApp:
                 # 取得目前視窗並進行處理
                 processed_result = self.processor.process_current_window()
                 
-                if not processed_result or 'fft_bands' not in processed_result:
+                if not processed_result:
                     return go.Figure().add_annotation(
-                        text="等待EEG數據...<br>請確認ThinkGear設備連接",
+                        text="EEG處理器錯誤<br>正在初始化...",
                         showarrow=False, x=0.5, y=0.5, 
                         xref="paper", yref="paper",
-                        font=dict(size=16, color="gray")
+                        font=dict(size=16, color="red")
+                    )
+                
+                if 'fft_bands' not in processed_result:
+                    return go.Figure().add_annotation(
+                        text="FFT頻段數據缺失<br>正在生成測試數據...",
+                        showarrow=False, x=0.5, y=0.5, 
+                        xref="paper", yref="paper",
+                        font=dict(size=16, color="orange")
                     )
                 
                 fft_bands = processed_result['fft_bands']
+                
+                # 驗證 FFT 頻段數據
+                if not fft_bands or all(len(band_data) == 0 for band_data in fft_bands.values()):
+                    return go.Figure().add_annotation(
+                        text="FFT頻段為空<br>正在重新生成數據...",
+                        showarrow=False, x=0.5, y=0.5, 
+                        xref="paper", yref="paper",
+                        font=dict(size=16, color="orange")
+                    )
                 
                 # 建立多個子圖的折線圖
                 band_names = list(self.bands.keys())
@@ -271,24 +288,43 @@ class EEGDashboardApp:
                 
                 # 計算時間軸
                 if len(fft_bands) > 0:
-                    sample_length = len(next(iter(fft_bands.values())))
-                    t = np.arange(sample_length) / self.processor.sample_rate
+                    # 找到第一個非空的頻段來計算時間軸
+                    sample_length = 0
+                    for band_data in fft_bands.values():
+                        if len(band_data) > 0:
+                            sample_length = len(band_data)
+                            break
                     
-                    for i, (band_name, band_color) in enumerate(zip(band_names, self.band_colors.values()), start=1):
-                        band_key = band_name.split(' ')[0].lower()
-                        band_signal = fft_bands.get(band_key, np.array([]))
+                    if sample_length > 0:
+                        t = np.arange(sample_length) / self.processor.sample_rate
                         
-                        if len(band_signal) > 0:
-                            fig.add_trace(
-                                go.Scatter(
-                                    x=t, 
-                                    y=band_signal, 
-                                    mode="lines",
-                                    line=dict(color=band_color, width=1.5),
-                                    showlegend=False
-                                ),
-                                row=i, col=1
-                            )
+                        for i, (band_name, band_color) in enumerate(zip(band_names, self.band_colors.values()), start=1):
+                            band_key = band_name.split(' ')[0].lower()
+                            band_signal = fft_bands.get(band_key, np.array([]))
+                            
+                            if len(band_signal) > 0:
+                                fig.add_trace(
+                                    go.Scatter(
+                                        x=t, 
+                                        y=band_signal, 
+                                        mode="lines",
+                                        line=dict(color=band_color, width=1.5),
+                                        showlegend=False
+                                    ),
+                                    row=i, col=1
+                                )
+                            else:
+                                # 如果頻段數據為空，顯示零線
+                                fig.add_trace(
+                                    go.Scatter(
+                                        x=t, 
+                                        y=np.zeros(len(t)), 
+                                        mode="lines",
+                                        line=dict(color="gray", width=1, dash="dash"),
+                                        showlegend=False
+                                    ),
+                                    row=i, col=1
+                                )
                 
                 fig.update_layout(
                     title="FFT頻帶分析 (時域波形)",
