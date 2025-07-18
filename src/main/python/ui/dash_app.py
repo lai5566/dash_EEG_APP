@@ -205,9 +205,14 @@ class EEGDashboardApp:
                             html.Div([
                                 html.Button("🎙️ 開始錄音", id="start-recording-btn",
                                            style={'marginRight': '10px', 'padding': '10px 20px', 
-                                                  'fontSize': '14px'}),
+                                                  'fontSize': '14px', 'backgroundColor': '#28a745',
+                                                  'color': 'white', 'border': 'none', 'borderRadius': '4px',
+                                                  'cursor': 'pointer'}),
                                 html.Button("⏹️ 停止錄音", id="stop-recording-btn",
-                                           style={'padding': '10px 20px', 'fontSize': '14px'}),
+                                           style={'padding': '10px 20px', 'fontSize': '14px',
+                                                  'backgroundColor': '#dc3545', 'color': 'white',
+                                                  'border': 'none', 'borderRadius': '4px',
+                                                  'cursor': 'pointer'}),
                             ], style={'marginBottom': '10px'}),
                             html.Div(id="recording-status",
                                      style={'fontSize': '12px', 'color': '#666'}),
@@ -621,36 +626,45 @@ class EEGDashboardApp:
                 return "❌ 音頻錄製器未初始化"
                 
             try:
+                # 檢查音頻模組是否可用
+                status = self.audio_recorder.get_recording_status()
+                if not status.get('audio_available', False):
+                    return "❌ 音頻模組未安裝 (pip install sounddevice scipy)"
+                
                 ctx = callback_context
                 if not ctx.triggered:
                     # 定期狀態更新
-                    status = self.audio_recorder.get_recording_status()
                     if status['is_recording']:
                         elapsed = status['elapsed_time']
-                        return f"🔴 錄音中... ({elapsed:.0f}秒) | 群組ID: {status['current_group_id']}"
+                        group_id = status['current_group_id'] or "未知"
+                        return f"🔴 錄音中... ({elapsed:.0f}秒) | 群組ID: {group_id}"
                     else:
-                        return "⚪ 待機中"
+                        device_info = self.audio_recorder.get_device_info()
+                        if device_info.get('available', False) and 'error' not in device_info:
+                            device_name = device_info.get('name', '未知設備')
+                            return f"⚪ 待機中 | 設備: {device_name}"
+                        else:
+                            error_msg = device_info.get('error', '未知錯誤')
+                            return f"⚠️ 設備錯誤: {error_msg}"
                 
                 button_id = ctx.triggered[0]['prop_id'].split('.')[0]
                 
                 if button_id == "start-recording-btn" and start_clicks:
-                    status = self.audio_recorder.get_recording_status()
                     if not status['is_recording']:
                         group_id = str(uuid.uuid4())[:8]
                         success = self.audio_recorder.start_recording(group_id)
                         if success:
                             return f"🔴 錄音開始 | 群組ID: {group_id}"
                         else:
-                            return "❌ 錄音啟動失敗"
+                            return "❌ 錄音啟動失敗 - 請檢查音頻設備"
                     else:
                         return "⚠️ 已在錄音中"
                 
                 elif button_id == "stop-recording-btn" and stop_clicks:
-                    status = self.audio_recorder.get_recording_status()
                     if status['is_recording']:
                         filename = self.audio_recorder.stop_recording(self.db_writer)
                         if filename:
-                            return f"✅ 錄音已停止並儲存: {filename}"
+                            return f"✅ 錄音已停止並儲存: {os.path.basename(filename)}"
                         else:
                             return "⚠️ 錄音停止，但儲存失敗"
                     else:
@@ -660,7 +674,7 @@ class EEGDashboardApp:
                 
             except Exception as e:
                 logger.error(f"Error in handle_recording_control: {e}")
-                return f"錄音控制錯誤: {e}"
+                return f"❌ 錄音控制錯誤: {str(e)}"
         
         @self.app.callback(
             [Output("performance-status", "children"),

@@ -309,7 +309,12 @@ class EEGApplication:
             
             # 寫入統一記錄 (如果有任何數據)
             if unified_record_data:
-                self.db_writer.add_unified_record(timestamp, **unified_record_data)
+                # 獲取當前錄音群組ID (如果正在錄音)
+                current_group_id = None
+                if self.audio_recorder and hasattr(self.audio_recorder, 'current_group_id'):
+                    current_group_id = self.audio_recorder.current_group_id
+                
+                self.db_writer.add_unified_record(timestamp, current_group_id, **unified_record_data)
             
         except Exception as e:
             logger.error(f"Error processing serial data: {e}")

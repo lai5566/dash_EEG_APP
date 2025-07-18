@@ -361,7 +361,8 @@ class AudioRecorder:
             'device_index': self.device_index,
             'sample_rate': self.sample_rate,
             'channels': self.channels,
-            'audio_available': AUDIO_AVAILABLE
+            'audio_available': AUDIO_AVAILABLE,
+            'recording_state': self.recording_state
         }
         
     def get_device_info(self) -> Dict[str, Any]:
