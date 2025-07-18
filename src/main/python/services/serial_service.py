@@ -189,6 +189,18 @@ def mock_serial_worker(out_queue: multiprocessing.Queue):
                 blink_intensity = random.randint(50, 200)
                 out_queue.put({'blink': blink_intensity, 'timestamp': timestamp})
 
+            # 模擬感測器數據 (每秒更新一次)
+            if sample_count % 50 == 0:  # 每50個樣本 (約1秒)
+                temperature = random.uniform(20.0, 30.0)  # 室溫範圍
+                humidity = random.uniform(40.0, 70.0)     # 濕度範圍
+                light = random.randint(100, 1000)         # 光線強度
+                out_queue.put({
+                    'temperature': temperature,
+                    'humidity': humidity,
+                    'light': light,
+                    'timestamp': timestamp
+                })
+
             time.sleep(0.02)  # 50Hz更新頻率
 
         except Exception as e:

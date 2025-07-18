@@ -228,6 +228,7 @@ class EEGApplication:
         """處理傳入的串列資料"""
         try:
             timestamp = data.get('timestamp', time.time())
+            unified_record_data = {}
             
             # 處理原始EEG資料
             if 'raw_value' in data:
@@ -235,6 +236,7 @@ class EEGApplication:
                 self.eeg_buffer.append(raw_value, timestamp)
                 self.processor.add_sample(raw_value)
                 self.db_writer.add_raw_data(timestamp, raw_value)
+                unified_record_data['raw_voltage'] = raw_value
             
             # 處理認知資料
             if any(key in data for key in ['attention', 'meditation', 'signal_quality']):
@@ -250,6 +252,14 @@ class EEGApplication:
                     data.get('meditation', 0),
                     data.get('signal_quality', 200)
                 )
+                
+                # 添加到統一記錄
+                if 'attention' in data:
+                    unified_record_data['attention'] = data['attention']
+                if 'meditation' in data:
+                    unified_record_data['meditation'] = data['meditation']
+                if 'signal_quality' in data:
+                    unified_record_data['signal_quality'] = data['signal_quality']
             
             # 處理ASIC頻帶資料
             if 'asic_bands' in data:
@@ -257,12 +267,49 @@ class EEGApplication:
                 print(f"[ASIC DEBUG] MainApp: Processing ASIC bands: {bands_data}")
                 self.eeg_buffer.add_asic_bands(bands_data)
                 self.db_writer.add_asic_data(timestamp, bands_data)
+                
+                # 添加到統一記錄 (映射到對應的功率字段)
+                if len(bands_data) >= 8:
+                    unified_record_data.update({
+                        'delta_power': bands_data[0],
+                        'theta_power': bands_data[1],
+                        'low_alpha_power': bands_data[2],
+                        'high_alpha_power': bands_data[3],
+                        'low_beta_power': bands_data[4],
+                        'high_beta_power': bands_data[5],
+                        'low_gamma_power': bands_data[6],
+                        'mid_gamma_power': bands_data[7]
+                    })
             
             # 處理眨眼事件
             if 'blink' in data:
                 blink_intensity = data['blink']
                 self.eeg_buffer.add_blink_event(blink_intensity)
                 self.db_writer.add_blink_data(timestamp, blink_intensity)
+                unified_record_data['blink_intensity'] = blink_intensity
+            
+            # 處理感測器數據 (如果存在)
+            if any(key in data for key in ['temperature', 'humidity', 'light']):
+                temperature = data.get('temperature', 0.0)
+                humidity = data.get('humidity', 0.0)
+                light = data.get('light', 0)
+                
+                # 更新緩衝區
+                self.eeg_buffer.add_sensor_data(temperature, humidity, light)
+                
+                # 寫入感測器資料表
+                self.db_writer.add_sensor_data(timestamp, temperature, humidity, light)
+                
+                # 添加到統一記錄
+                unified_record_data.update({
+                    'temperature': temperature,
+                    'humidity': humidity,
+                    'light': light
+                })
+            
+            # 寫入統一記錄 (如果有任何數據)
+            if unified_record_data:
+                self.db_writer.add_unified_record(timestamp, **unified_record_data)
             
         except Exception as e:
             logger.error(f"Error processing serial data: {e}")
@@ -375,7 +422,7 @@ class EEGApplication:
         except Exception as e:
             logger.error(f"Error stopping application: {e}")
     
-    def export_data(self, start_time: float, end_time: float, format: str = 'csv'):
+    def export_data(self, start_time: float, end_time: float, format: str = 'csv', table: str = 'unified_records'):
         """匯出指定時間範圍的資料"""
         try:
             if not self.data_exporter:
@@ -386,7 +433,8 @@ class EEGApplication:
                 start_time=start_time,
                 end_time=end_time,
                 format=format,
-                db_path=DATABASE_PATH
+                db_path=DATABASE_PATH,
+                table=table
             )
             
         except Exception as e:

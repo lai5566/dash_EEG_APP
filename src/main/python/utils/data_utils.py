@@ -243,7 +243,7 @@ class DataExporter:
             logger.error(f"Error exporting database table: {e}")
             return None
     
-    def export_data(self, start_time: float, end_time: float, format: str = 'csv', db_path: str = None):
+    def export_data(self, start_time: float, end_time: float, format: str = 'csv', db_path: str = None, table: str = 'unified_records'):
         """匯出指定時間範圍的資料"""
         try:
             if not db_path or not os.path.exists(db_path):
@@ -252,13 +252,26 @@ class DataExporter:
             
             conn = sqlite3.connect(db_path)
             
-            # 查詢指定時間範圍的資料
-            query = """
-                SELECT timestamp, voltage as eeg_value 
-                FROM raw_data 
-                WHERE timestamp BETWEEN ? AND ?
-                ORDER BY timestamp
-            """
+            # 根據表格選擇查詢
+            if table == 'unified_records':
+                # 查詢統一記錄表 (包含所有數據)
+                query = """
+                    SELECT timestamp, recording_group_id, attention, meditation, signal_quality,
+                           temperature, humidity, light, blink_intensity, raw_voltage,
+                           delta_power, theta_power, low_alpha_power, high_alpha_power,
+                           low_beta_power, high_beta_power, low_gamma_power, mid_gamma_power
+                    FROM unified_records 
+                    WHERE timestamp BETWEEN ? AND ?
+                    ORDER BY timestamp
+                """
+            else:
+                # 查詢原始資料表 (向後兼容)
+                query = """
+                    SELECT timestamp, voltage as eeg_value 
+                    FROM raw_data 
+                    WHERE timestamp BETWEEN ? AND ?
+                    ORDER BY timestamp
+                """
             
             df = pd.read_sql_query(query, conn, params=(start_time, end_time))
             
@@ -269,7 +282,8 @@ class DataExporter:
             # 產生檔案名稱
             start_date = datetime.fromtimestamp(start_time).strftime('%Y%m%d_%H%M%S')
             end_date = datetime.fromtimestamp(end_time).strftime('%Y%m%d_%H%M%S')
-            filename = f"eeg_data_{start_date}_to_{end_date}"
+            table_suffix = "_unified" if table == 'unified_records' else ""
+            filename = f"eeg_data{table_suffix}_{start_date}_to_{end_date}"
             
             if format.lower() == 'csv':
                 filepath = os.path.join(self.output_dir, f"{filename}.csv")
