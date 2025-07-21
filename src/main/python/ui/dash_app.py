@@ -24,6 +24,8 @@ from services.mqtt_client import MQTTSensorClient
 from services.audio_recorder import AudioRecorder
 from utils.data_utils import DataValidator, DataProcessor
 from resources.config.app_config import UI_CONFIG, PROCESSING_CONFIG, API_CONFIG
+from ui.management_page import ManagementPage
+from ui.sliding_panel import SlidingPanel
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,12 @@ class EEGDashboardApp:
 
         # 初始化Dash應用程式
         self.app = dash.Dash(__name__)
+        
+        # 初始化管理頁面
+        self.management_page = ManagementPage(self.db_writer)
+        
+        # 初始化滑動面板
+        self.sliding_panel = SlidingPanel(self.db_writer)
 
         # 效能監控
         self.performance_monitor = {
@@ -90,14 +98,119 @@ class EEGDashboardApp:
         # 設定版面配置和回呼函式
         self._setup_layout()
         self._setup_callbacks()
+        
+        # 註冊管理頁面回調
+        self.management_page.register_callbacks(self.app)
+        
+        # 註冊滑動面板回調
+        self.sliding_panel.register_callbacks(self.app)
 
     def _setup_layout(self):
         """設定主要版面配置"""
+        # 為應用程式添加外部樣式
+        self.app.index_string = '''
+        <!DOCTYPE html>
+        <html>
+            <head>
+                {%metas%}
+                <title>{%title%}</title>
+                {%favicon%}
+                {%css%}
+                <style>
+                    .nav-card:hover {
+                        transform: scale(1.05) !important;
+                        box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+                    }
+                    .nav-card.active {
+                        transform: scale(1.05) !important;
+                        border: 2px solid #fff !important;
+                        box-shadow: 0 8px 16px rgba(0,0,0,0.3) !important;
+                    }
+                </style>
+            </head>
+            <body>
+                {%app_entry%}
+                <footer>
+                    {%config%}
+                    {%scripts%}
+                    {%renderer%}
+                </footer>
+            </body>
+        </html>
+        '''
+        
         self.app.layout = html.Div([
+            # 滑動面板 (放在最前面以確保正確的z-index層級)
+            self.sliding_panel.create_panel_layout(),
+            
+            # 頁面路由組件
+            dcc.Location(id="url", refresh=False),
+            dcc.Store(id="page-store", data="dashboard"),
+            
+            # 全局數據存儲（用於頁面間共享數據）
+            dcc.Store(id="global-subjects-store", data=[]),
+            dcc.Store(id="global-sounds-store", data=[]),
+            
+            # 主容器
             html.Div([
                 # 標題
                 html.H1(UI_CONFIG['title'],
                         style={'textAlign': 'center', 'marginBottom': '20px', 'color': '#333'}),
+                
+                # 導航卡片區域
+                html.Div([
+                    html.Div([
+                        # 管理中心卡片
+                        html.Div([
+                            html.Div([
+                                html.H4("📊 管理中心",
+                                        style={'fontSize': '18px', 'fontWeight': 'bold',
+                                               'marginBottom': '10px', 'color': '#fff',
+                                               'textAlign': 'center'}),
+                                html.P("受試者註冊\n音效上傳",
+                                      style={'fontSize': '14px', 'color': '#fff',
+                                            'textAlign': 'center', 'margin': '0',
+                                            'whiteSpace': 'pre-line'})
+                            ], style={'padding': '20px', 'cursor': 'pointer',
+                                     'transition': 'all 0.3s ease'}),
+                        ], id="management-card", className="nav-card",
+                           style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
+                                  'marginBottom': '15px', 'cursor': 'pointer',
+                                  'transform': 'scale(1)', 'transition': 'all 0.3s ease',
+                                  'flex': '1', 'marginRight': '10px'}),
+                        
+                        # EEG 實驗卡片
+                        html.Div([
+                            html.Div([
+                                html.H4("📈 即時EEG",
+                                        style={'fontSize': '18px', 'fontWeight': 'bold',
+                                               'marginBottom': '10px', 'color': '#fff',
+                                               'textAlign': 'center'}),
+                                html.P("實驗控制\n數據監控",
+                                      style={'fontSize': '14px', 'color': '#fff',
+                                            'textAlign': 'center', 'margin': '0',
+                                            'whiteSpace': 'pre-line'})
+                            ], style={'padding': '20px', 'cursor': 'pointer',
+                                     'transition': 'all 0.3s ease'}),
+                        ], id="dashboard-card", className="nav-card active",
+                           style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
+                                  'marginBottom': '15px', 'cursor': 'pointer',
+                                  'transform': 'scale(1.05)', 'transition': 'all 0.3s ease',
+                                  'border': '2px solid #fff', 'flex': '1', 'marginLeft': '10px'}),
+                        
+                    ], style={'display': 'flex', 'marginBottom': '20px', 'padding': '0 20px'}),
+                ]),
+                
+                # 主要內容容器
+                html.Div(id="page-content")
+            ], style={'maxWidth': '1200px', 'margin': '0 auto', 'padding': '10px'}),
+        ])
+    
+    def _create_dashboard_layout(self):
+        """創建儀表板頁面佈局"""
+        return html.Div([
 
                 # 第一行：FFT頻帶分析
                 html.Div([
@@ -192,14 +305,55 @@ class EEGDashboardApp:
                     ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
                 ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
-                # 第五行：實驗控制和感測器資料
+                # 第五行：頁面切換卡片和感測器資料
                 html.Div([
-                    # 左側：實驗控制
+                    # 左側：頁面切換卡片
                     html.Div([
+                        # 管理中心卡片
                         html.Div([
-                            html.H3("實驗控制",
-                                    style={'fontSize': '18px', 'fontWeight': 'bold',
-                                           'marginBottom': '10px', 'color': '#555'}),
+                            html.Div([
+                                html.H4("📊 管理中心",
+                                        style={'fontSize': '18px', 'fontWeight': 'bold',
+                                               'marginBottom': '10px', 'color': '#fff',
+                                               'textAlign': 'center'}),
+                                html.P("受試者註冊\n音效上傳",
+                                      style={'fontSize': '14px', 'color': '#fff',
+                                            'textAlign': 'center', 'margin': '0',
+                                            'whiteSpace': 'pre-line'})
+                            ], style={'padding': '20px', 'cursor': 'pointer',
+                                     'transition': 'all 0.3s ease'}),
+                        ], id="management-card", className="nav-card",
+                           style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
+                                  'marginBottom': '15px', 'cursor': 'pointer',
+                                  'transform': 'scale(1)', 'transition': 'all 0.3s ease'}),
+                        
+                        # EEG 實驗卡片
+                        html.Div([
+                            html.Div([
+                                html.H4("📈 即時EEG",
+                                        style={'fontSize': '18px', 'fontWeight': 'bold',
+                                               'marginBottom': '10px', 'color': '#fff',
+                                               'textAlign': 'center'}),
+                                html.P("實驗控制\n數據監控",
+                                      style={'fontSize': '14px', 'color': '#fff',
+                                            'textAlign': 'center', 'margin': '0',
+                                            'whiteSpace': 'pre-line'})
+                            ], style={'padding': '20px', 'cursor': 'pointer',
+                                     'transition': 'all 0.3s ease'}),
+                        ], id="dashboard-card", className="nav-card active",
+                           style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
+                                  'marginBottom': '15px', 'cursor': 'pointer',
+                                  'transform': 'scale(1.05)', 'transition': 'all 0.3s ease',
+                                  'border': '2px solid #fff'}),
+                        
+                        # 實驗控制面板（當在儀表板模式時顯示）
+                        html.Div([
+                            html.Div([
+                                html.H3("實驗控制",
+                                        style={'fontSize': '18px', 'fontWeight': 'bold',
+                                               'marginBottom': '10px', 'color': '#555'}),
                             
                             # 受試者選擇
                             html.Div([
@@ -269,9 +423,11 @@ class EEGDashboardApp:
                             html.Div(id="experiment-status",
                                      style={'fontSize': '12px', 'color': '#666', 'marginTop': '10px',
                                             'padding': '8px', 'backgroundColor': '#f8f9fa', 'borderRadius': '4px'}),
-                        ], style={'background': 'white', 'borderRadius': '8px',
-                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                  'padding': '15px', 'marginBottom': '15px'}),
+                            ], style={'background': 'white', 'borderRadius': '8px',
+                                      'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                                      'padding': '15px', 'marginBottom': '15px'}),
+                        ], id="experiment-controls", style={'display': 'block'}),
+                        
                     ], style={'flex': '1', 'padding': '5px', 'minWidth': '350px'}),
 
                     # 右側：感測器數據
@@ -304,10 +460,103 @@ class EEGDashboardApp:
                 dcc.Store(id="performance-store", data={}),
 
             ], style={'maxWidth': '1200px', 'margin': '0 auto', 'padding': '10px'}),
-        ])
+
 
     def _setup_callbacks(self):
         """設定所有儀表板回呼函式"""
+        
+        # 頁面路由回調
+        @self.app.callback(
+            Output("page-content", "children"),
+            [Input("url", "pathname"),
+             Input("management-card", "n_clicks"),
+             Input("dashboard-card", "n_clicks"),
+             Input("back-to-dashboard-btn", "n_clicks"),
+             Input("page-store", "data")],
+            prevent_initial_call=False
+        )
+        def display_page(pathname, management_clicks, dashboard_clicks, back_clicks, current_page):
+            """根據URL或卡片點擊顯示對應頁面"""
+            ctx = callback_context
+            
+            if ctx.triggered:
+                trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+                
+                if trigger_id == "management-card" and management_clicks:
+                    return self.management_page.create_layout()
+                elif trigger_id == "dashboard-card" and dashboard_clicks:
+                    return self._create_dashboard_layout()
+                elif trigger_id == "back-to-dashboard-btn" and back_clicks:
+                    return self._create_dashboard_layout()
+            
+            # 預設顯示儀表板
+            return self._create_dashboard_layout()
+        
+        # 頁面狀態管理
+        @self.app.callback(
+            Output("page-store", "data"),
+            [Input("management-card", "n_clicks"),
+             Input("dashboard-card", "n_clicks"),
+             Input("back-to-dashboard-btn", "n_clicks")],
+            prevent_initial_call=True
+        )
+        def update_page_state(management_clicks, dashboard_clicks, back_clicks):
+            """更新頁面狀態"""
+            ctx = callback_context
+            
+            if ctx.triggered:
+                trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+                
+                if trigger_id == "management-card" and management_clicks:
+                    return "management"
+                elif trigger_id == "dashboard-card" and dashboard_clicks:
+                    return "dashboard"
+                elif trigger_id == "back-to-dashboard-btn" and back_clicks:
+                    return "dashboard"
+            
+            return "dashboard"
+        
+        # 全局數據同步回調
+        @self.app.callback(
+            Output("global-subjects-store", "data"),
+            Input("subjects-store-mgmt", "data"),
+            prevent_initial_call=True
+        )
+        def sync_subjects_data(subjects_data):
+            """同步受試者數據到全局存儲"""
+            if subjects_data:
+                return subjects_data
+            # 如果沒有數據，從資料庫獲取
+            return self.db_writer.get_subjects()
+        
+        @self.app.callback(
+            Output("global-sounds-store", "data"),
+            Input("sounds-store-mgmt", "data"),
+            prevent_initial_call=True
+        )
+        def sync_sounds_data(sounds_data):
+            """同步音效數據到全局存儲"""
+            if sounds_data:
+                return sounds_data
+            # 如果沒有數據，從資料庫獲取
+            return self.db_writer.get_ambient_sounds()
+        
+        # 初始化全局數據存儲
+        @self.app.callback(
+            [Output("global-subjects-store", "data", allow_duplicate=True),
+             Output("global-sounds-store", "data", allow_duplicate=True)],
+            Input("page-content", "children"),
+            prevent_initial_call='initial_duplicate'
+        )
+        def initialize_global_data(page_content):
+            """頁面載入時初始化全局數據"""
+            try:
+                subjects = self.db_writer.get_subjects()
+                sounds = self.db_writer.get_ambient_sounds()
+                return subjects, sounds
+            except Exception as e:
+                logger.error(f"Error initializing global data: {e}")
+                return [], []
 
         @self.app.callback(
             Output("fft-bands-main", "figure"),
@@ -685,17 +934,28 @@ class EEGDashboardApp:
         @self.app.callback(
             [Output("subject-dropdown", "options"),
              Output("ambient-sound-dropdown", "options")],
-            Input("interval", "n_intervals")
+            [Input("interval", "n_intervals"),
+             Input("global-subjects-store", "data"),
+             Input("global-sounds-store", "data")],
+            prevent_initial_call=True
         )
-        def update_dropdown_options(n):
+        def update_dropdown_options(n, subjects_data, sounds_data):
             """更新下拉選單選項"""
             try:
-                # 獲取受試者列表
-                subjects = self.db_writer.get_subjects()
+                # 獲取受試者列表（優先使用管理頁面的數據，否則從資料庫重新獲取）
+                if subjects_data and len(subjects_data) > 0:
+                    subjects = subjects_data
+                else:
+                    subjects = self.db_writer.get_subjects()
+                
                 subject_options = [{'label': f"{s['subject_id']} ({s['gender']}, {s['age']}歲)", 'value': s['subject_id']} for s in subjects]
                 
-                # 獲取環境音效列表
-                sounds = self.db_writer.get_ambient_sounds()
+                # 獲取環境音效列表（同樣優先使用管理頁面的數據）
+                if sounds_data and len(sounds_data) > 0:
+                    sounds = sounds_data
+                else:
+                    sounds = self.db_writer.get_ambient_sounds()
+                
                 sound_options = [{'label': f"{s['sound_name']} ({s['style_category']})", 'value': s['id']} for s in sounds]
                 
                 return subject_options, sound_options

@@ -16,7 +16,7 @@ APP_CONFIG = {
 API_CONFIG = {
     'host': '0.0.0.0',
     'port': 8052,
-    'debug': False,
+    'debug': True,
     'threaded': True,
     'buffer_size': 1024,  # 與APP_CONFIG保持一致
     'sample_rate': 512,
@@ -90,7 +90,7 @@ PLATFORM_CONFIG = {
 }
 
 # 全域狀態
-USE_MOCK_DATA = False  # 暫時啟用以測試ASIC功能
+USE_MOCK_DATA = True  # 暫時啟用以測試ASIC功能
 RECORDING_STATE = {
     'is_recording': False,
     'current_group_id': None,

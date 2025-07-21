@@ -7,7 +7,7 @@ AUDIO_CONFIG = {
     'device_index': None,  # 自動偵測
     'sample_rate': 44100,
     'channels': 1,  # 單聲道
-    'max_duration': 60,  # 秒
+    'max_duration': 600,  # 秒
     'output_directory': os.path.join(os.getcwd(), 'recordings'),
     'file_format': 'wav',
     'bit_depth': 16,
