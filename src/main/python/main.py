@@ -314,7 +314,9 @@ class EEGApplication:
                 if self.audio_recorder and hasattr(self.audio_recorder, 'current_group_id'):
                     current_group_id = self.audio_recorder.current_group_id
                 
-                self.db_writer.add_unified_record(timestamp, current_group_id, **unified_record_data)
+                # 確保有當前會話ID
+                if self.db_writer.current_session_id:
+                    self.db_writer.add_unified_record(timestamp, current_group_id, **unified_record_data)
             
         except Exception as e:
             logger.error(f"Error processing serial data: {e}")

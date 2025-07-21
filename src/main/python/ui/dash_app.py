@@ -76,6 +76,17 @@ class EEGDashboardApp:
         self.asic_bands = ["Delta", "Theta", "Low-Alpha", "High-Alpha",
                            "Low-Beta", "High-Beta", "Low-Gamma", "Mid-Gamma"]
 
+        # 實驗狀態管理
+        self.experiment_state = {
+            'current_session_id': None,
+            'current_recording_group_id': None,
+            'experiment_running': False,
+            'recording_active': False,
+            'selected_subject': None,
+            'selected_sound': None,
+            'selected_eye_state': 'open'
+        }
+
         # 設定版面配置和回呼函式
         self._setup_layout()
         self._setup_callbacks()
@@ -181,9 +192,89 @@ class EEGDashboardApp:
                     ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
                 ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
-                # 第五行：感測器和錄音
+                # 第五行：實驗控制和感測器資料
                 html.Div([
-                    # 左側：感測器數據
+                    # 左側：實驗控制
+                    html.Div([
+                        html.Div([
+                            html.H3("實驗控制",
+                                    style={'fontSize': '18px', 'fontWeight': 'bold',
+                                           'marginBottom': '10px', 'color': '#555'}),
+                            
+                            # 受試者選擇
+                            html.Div([
+                                html.Label("受試者ID:", style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px', 'display': 'block'}),
+                                dcc.Dropdown(
+                                    id="subject-dropdown",
+                                    placeholder="選擇或輸入受試者ID",
+                                    searchable=True,
+                                    clearable=True,
+                                    style={'marginBottom': '10px'}
+                                ),
+                            ]),
+                            
+                            # 環境音效選擇
+                            html.Div([
+                                html.Label("環境音效:", style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px', 'display': 'block'}),
+                                dcc.Dropdown(
+                                    id="ambient-sound-dropdown",
+                                    placeholder="選擇環境音效 (可選)",
+                                    searchable=True,
+                                    clearable=True,
+                                    style={'marginBottom': '10px'}
+                                ),
+                            ]),
+                            
+                            # 眼睛狀態選擇
+                            html.Div([
+                                html.Label("眼睛狀態:", style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px', 'display': 'block'}),
+                                dcc.Dropdown(
+                                    id="eye-state-dropdown",
+                                    options=[
+                                        {'label': '睜眼', 'value': 'open'},
+                                        {'label': '閉眼', 'value': 'closed'},
+                                        {'label': '混合', 'value': 'mixed'}
+                                    ],
+                                    value='open',
+                                    clearable=False,
+                                    style={'marginBottom': '15px'}
+                                ),
+                            ]),
+                            
+                            # 控制按鈕
+                            html.Div([
+                                html.Button("📊 開始記錄", id="start-experiment-btn",
+                                            style={'marginRight': '10px', 'marginBottom': '10px', 'padding': '10px 20px',
+                                                   'fontSize': '14px', 'backgroundColor': '#007bff',
+                                                   'color': 'white', 'border': 'none', 'borderRadius': '4px',
+                                                   'cursor': 'pointer', 'width': '48%'}),
+                                html.Button("🎙️ 開始錄音", id="start-recording-btn",
+                                            style={'marginBottom': '10px', 'padding': '10px 20px',
+                                                   'fontSize': '14px', 'backgroundColor': '#28a745',
+                                                   'color': 'white', 'border': 'none', 'borderRadius': '4px',
+                                                   'cursor': 'pointer', 'width': '48%', 'disabled': True}),
+                                html.Button("⏹️ 停止錄音", id="stop-recording-btn",
+                                            style={'marginRight': '10px', 'marginBottom': '10px', 'padding': '10px 20px',
+                                                   'fontSize': '14px', 'backgroundColor': '#dc3545',
+                                                   'color': 'white', 'border': 'none', 'borderRadius': '4px',
+                                                   'cursor': 'pointer', 'width': '48%', 'disabled': True}),
+                                html.Button("🛑 停止實驗", id="stop-experiment-btn",
+                                            style={'marginBottom': '10px', 'padding': '10px 20px',
+                                                   'fontSize': '14px', 'backgroundColor': '#6c757d',
+                                                   'color': 'white', 'border': 'none', 'borderRadius': '4px',
+                                                   'cursor': 'pointer', 'width': '48%', 'disabled': True}),
+                            ], style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'space-between'}),
+                            
+                            # 狀態顯示
+                            html.Div(id="experiment-status",
+                                     style={'fontSize': '12px', 'color': '#666', 'marginTop': '10px',
+                                            'padding': '8px', 'backgroundColor': '#f8f9fa', 'borderRadius': '4px'}),
+                        ], style={'background': 'white', 'borderRadius': '8px',
+                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                                  'padding': '15px', 'marginBottom': '15px'}),
+                    ], style={'flex': '1', 'padding': '5px', 'minWidth': '350px'}),
+
+                    # 右側：感測器數據
                     html.Div([
                         html.Div([
                             html.H3("環境感測器",
@@ -196,31 +287,6 @@ class EEGDashboardApp:
                                   'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
                                   'padding': '15px', 'marginBottom': '15px'}),
                     ], style={'flex': '2', 'padding': '5px', 'minWidth': '300px'}),
-
-                    # 右側：錄音控制
-                    html.Div([
-                        html.Div([
-                            html.H3("錄音控制",
-                                    style={'fontSize': '18px', 'fontWeight': 'bold',
-                                           'marginBottom': '10px', 'color': '#555'}),
-                            html.Div([
-                                html.Button("🎙️ 開始錄音", id="start-recording-btn",
-                                            style={'marginRight': '10px', 'padding': '10px 20px',
-                                                   'fontSize': '14px', 'backgroundColor': '#28a745',
-                                                   'color': 'white', 'border': 'none', 'borderRadius': '4px',
-                                                   'cursor': 'pointer'}),
-                                html.Button("⏹️ 停止錄音", id="stop-recording-btn",
-                                            style={'padding': '10px 20px', 'fontSize': '14px',
-                                                   'backgroundColor': '#dc3545', 'color': 'white',
-                                                   'border': 'none', 'borderRadius': '4px',
-                                                   'cursor': 'pointer'}),
-                            ], style={'marginBottom': '10px'}),
-                            html.Div(id="recording-status",
-                                     style={'fontSize': '12px', 'color': '#666'}),
-                        ], style={'background': 'white', 'borderRadius': '8px',
-                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                  'padding': '15px', 'marginBottom': '15px'}),
-                    ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
                 ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
                 # 狀態列
@@ -614,6 +680,158 @@ class EEGDashboardApp:
 
             except Exception as e:
                 return f"感測器錯誤: {e}"
+
+        # 實驗控制回調函數
+        @self.app.callback(
+            [Output("subject-dropdown", "options"),
+             Output("ambient-sound-dropdown", "options")],
+            Input("interval", "n_intervals")
+        )
+        def update_dropdown_options(n):
+            """更新下拉選單選項"""
+            try:
+                # 獲取受試者列表
+                subjects = self.db_writer.get_subjects()
+                subject_options = [{'label': f"{s['subject_id']} ({s['gender']}, {s['age']}歲)", 'value': s['subject_id']} for s in subjects]
+                
+                # 獲取環境音效列表
+                sounds = self.db_writer.get_ambient_sounds()
+                sound_options = [{'label': f"{s['sound_name']} ({s['style_category']})", 'value': s['id']} for s in sounds]
+                
+                return subject_options, sound_options
+            except Exception as e:
+                logger.error(f"Error updating dropdown options: {e}")
+                return [], []
+
+        @self.app.callback(
+            Output("experiment-status", "children"),
+            [Input("start-experiment-btn", "n_clicks"),
+             Input("start-recording-btn", "n_clicks"), 
+             Input("stop-recording-btn", "n_clicks"),
+             Input("stop-experiment-btn", "n_clicks"),
+             Input("interval", "n_intervals")],
+            [State("subject-dropdown", "value"),
+             State("ambient-sound-dropdown", "value"),
+             State("eye-state-dropdown", "value")],
+            prevent_initial_call=True
+        )
+        def handle_experiment_control(start_exp_clicks, start_rec_clicks, stop_rec_clicks, stop_exp_clicks, n,
+                                     subject_id, ambient_sound_id, eye_state):
+            """處理實驗控制流程"""
+            try:
+                ctx = callback_context
+                if not ctx.triggered:
+                    # 定期狀態更新
+                    if self.experiment_state['experiment_running']:
+                        session_id = self.experiment_state['current_session_id']
+                        recording_status = "🔴 錄音中" if self.experiment_state['recording_active'] else "⚪ 待機"
+                        return f"📊 實驗進行中 | 會話: {session_id} | {recording_status}"
+                    else:
+                        return "⚪ 等待開始實驗..."
+
+                button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+                
+                if button_id == "start-experiment-btn" and start_exp_clicks:
+                    if not subject_id:
+                        return "❌ 請先選擇受試者ID"
+                    
+                    if not self.experiment_state['experiment_running']:
+                        # 開始新的實驗會話
+                        session_id = self.db_writer.start_experiment_session(
+                            subject_id=subject_id,
+                            eye_state=eye_state,
+                            ambient_sound_id=ambient_sound_id,
+                            researcher_name="System",
+                            notes="Automated experiment session"
+                        )
+                        
+                        if session_id:
+                            self.experiment_state.update({
+                                'current_session_id': session_id,
+                                'experiment_running': True,
+                                'selected_subject': subject_id,
+                                'selected_sound': ambient_sound_id,
+                                'selected_eye_state': eye_state
+                            })
+                            return f"✅ 實驗已開始 | 會話ID: {session_id}"
+                        else:
+                            return "❌ 實驗啟動失敗"
+                    else:
+                        return "⚠️ 實驗已在進行中"
+                
+                elif button_id == "start-recording-btn" and start_rec_clicks:
+                    if not self.experiment_state['experiment_running']:
+                        return "❌ 請先開始實驗"
+                    
+                    if not self.experiment_state['recording_active']:
+                        # 生成錄音群組ID
+                        session_id = self.experiment_state['current_session_id']
+                        recording_group_id = f"{session_id}_rec_{int(time.time())}"
+                        
+                        # 開始音頻錄音
+                        if self.audio_recorder:
+                            success = self.audio_recorder.start_recording(recording_group_id)
+                            if success:
+                                self.experiment_state.update({
+                                    'current_recording_group_id': recording_group_id,
+                                    'recording_active': True
+                                })
+                                return f"🔴 錄音已開始 | 群組ID: {recording_group_id}"
+                            else:
+                                return "❌ 錄音啟動失敗"
+                        else:
+                            return "❌ 音頻錄製器未初始化"
+                    else:
+                        return "⚠️ 已在錄音中"
+                
+                elif button_id == "stop-recording-btn" and stop_rec_clicks:
+                    if self.experiment_state['recording_active']:
+                        # 停止音頻錄音
+                        if self.audio_recorder:
+                            filename = self.audio_recorder.stop_recording(self.db_writer)
+                            self.experiment_state.update({
+                                'current_recording_group_id': None,
+                                'recording_active': False
+                            })
+                            if filename:
+                                return f"✅ 錄音已停止 | 檔案: {os.path.basename(filename)}"
+                            else:
+                                return "⚠️ 錄音停止，但儲存失敗"
+                        else:
+                            return "❌ 音頻錄製器未初始化"
+                    else:
+                        return "⚠️ 目前沒有錄音"
+                
+                elif button_id == "stop-experiment-btn" and stop_exp_clicks:
+                    if self.experiment_state['experiment_running']:
+                        # 如果還在錄音，先停止錄音
+                        if self.experiment_state['recording_active'] and self.audio_recorder:
+                            self.audio_recorder.stop_recording(self.db_writer)
+                        
+                        # 結束實驗會話
+                        session_id = self.experiment_state['current_session_id']
+                        success = self.db_writer.end_experiment_session(session_id)
+                        
+                        if success:
+                            self.experiment_state.update({
+                                'current_session_id': None,
+                                'current_recording_group_id': None,
+                                'experiment_running': False,
+                                'recording_active': False,
+                                'selected_subject': None,
+                                'selected_sound': None
+                            })
+                            return f"✅ 實驗已結束 | 會話: {session_id}"
+                        else:
+                            return "❌ 實驗結束失敗"
+                    else:
+                        return "⚠️ 沒有進行中的實驗"
+                
+                return "⚪ 等待操作..."
+                
+            except Exception as e:
+                logger.error(f"Error in handle_experiment_control: {e}")
+                return f"❌ 實驗控制錯誤: {str(e)}"
 
         @self.app.callback(
             Output("recording-status", "children"),
