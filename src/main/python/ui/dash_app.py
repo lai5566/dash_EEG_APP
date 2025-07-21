@@ -167,51 +167,51 @@ class EEGDashboardApp:
                 html.H1(UI_CONFIG['title'],
                         style={'textAlign': 'center', 'marginBottom': '20px', 'color': '#333'}),
                 
-                # 導航卡片區域
-                html.Div([
-                    html.Div([
-                        # 管理中心卡片
-                        html.Div([
-                            html.Div([
-                                html.H4("📊 管理中心",
-                                        style={'fontSize': '18px', 'fontWeight': 'bold',
-                                               'marginBottom': '10px', 'color': '#fff',
-                                               'textAlign': 'center'}),
-                                html.P("受試者註冊\n音效上傳",
-                                      style={'fontSize': '14px', 'color': '#fff',
-                                            'textAlign': 'center', 'margin': '0',
-                                            'whiteSpace': 'pre-line'})
-                            ], style={'padding': '20px', 'cursor': 'pointer',
-                                     'transition': 'all 0.3s ease'}),
-                        ], id="management-card", className="nav-card",
-                           style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                  'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
-                                  'marginBottom': '15px', 'cursor': 'pointer',
-                                  'transform': 'scale(1)', 'transition': 'all 0.3s ease',
-                                  'flex': '1', 'marginRight': '10px'}),
-                        
-                        # EEG 實驗卡片
-                        html.Div([
-                            html.Div([
-                                html.H4("📈 即時EEG",
-                                        style={'fontSize': '18px', 'fontWeight': 'bold',
-                                               'marginBottom': '10px', 'color': '#fff',
-                                               'textAlign': 'center'}),
-                                html.P("實驗控制\n數據監控",
-                                      style={'fontSize': '14px', 'color': '#fff',
-                                            'textAlign': 'center', 'margin': '0',
-                                            'whiteSpace': 'pre-line'})
-                            ], style={'padding': '20px', 'cursor': 'pointer',
-                                     'transition': 'all 0.3s ease'}),
-                        ], id="dashboard-card", className="nav-card active",
-                           style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                  'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
-                                  'marginBottom': '15px', 'cursor': 'pointer',
-                                  'transform': 'scale(1.05)', 'transition': 'all 0.3s ease',
-                                  'border': '2px solid #fff', 'flex': '1', 'marginLeft': '10px'}),
-                        
-                    ], style={'display': 'flex', 'marginBottom': '20px', 'padding': '0 20px'}),
-                ]),
+                # # 導航卡片區域
+                # html.Div([
+                #     html.Div([
+                #         # 管理中心卡片
+                #         html.Div([
+                #             html.Div([
+                #                 html.H4("📊 管理中心",
+                #                         style={'fontSize': '18px', 'fontWeight': 'bold',
+                #                                'marginBottom': '10px', 'color': '#fff',
+                #                                'textAlign': 'center'}),
+                #                 html.P("受試者註冊\n音效上傳",
+                #                       style={'fontSize': '14px', 'color': '#fff',
+                #                             'textAlign': 'center', 'margin': '0',
+                #                             'whiteSpace': 'pre-line'})
+                #             ], style={'padding': '20px', 'cursor': 'pointer',
+                #                      'transition': 'all 0.3s ease'}),
+                #         ], id="management-card", className="nav-card",
+                #            style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                #                   'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
+                #                   'marginBottom': '15px', 'cursor': 'pointer',
+                #                   'transform': 'scale(1)', 'transition': 'all 0.3s ease',
+                #                   'flex': '1', 'marginRight': '10px'}),
+                #
+                #         # EEG 實驗卡片
+                #         html.Div([
+                #             html.Div([
+                #                 html.H4("📈 即時EEG",
+                #                         style={'fontSize': '18px', 'fontWeight': 'bold',
+                #                                'marginBottom': '10px', 'color': '#fff',
+                #                                'textAlign': 'center'}),
+                #                 html.P("實驗控制\n數據監控",
+                #                       style={'fontSize': '14px', 'color': '#fff',
+                #                             'textAlign': 'center', 'margin': '0',
+                #                             'whiteSpace': 'pre-line'})
+                #             ], style={'padding': '20px', 'cursor': 'pointer',
+                #                      'transition': 'all 0.3s ease'}),
+                #         ], id="dashboard-card", className="nav-card active",
+                #            style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                #                   'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
+                #                   'marginBottom': '15px', 'cursor': 'pointer',
+                #                   'transform': 'scale(1.05)', 'transition': 'all 0.3s ease',
+                #                   'border': '2px solid #fff', 'flex': '1', 'marginLeft': '10px'}),
+                #
+                #     ], style={'display': 'flex', 'marginBottom': '20px', 'padding': '0 20px'}),
+                # ]),
                 
                 # 主要內容容器
                 html.Div(id="page-content")
@@ -439,56 +439,18 @@ class EEGDashboardApp:
     def _setup_callbacks(self):
         """設定所有儀表板回呼函式"""
         
-        # 頁面路由回調
+        # 頁面路由回調（簡化版 - 只顯示儀表板）
         @self.app.callback(
             Output("page-content", "children"),
-            [Input("url", "pathname"),
-             Input("management-card", "n_clicks"),
-             Input("dashboard-card", "n_clicks"),
-             Input("back-to-dashboard-btn", "n_clicks"),
-             Input("page-store", "data")],
+            [Input("url", "pathname")],
             prevent_initial_call=False
         )
-        def display_page(pathname, management_clicks, dashboard_clicks, back_clicks, current_page):
-            """根據URL或卡片點擊顯示對應頁面"""
-            ctx = callback_context
-            
-            if ctx.triggered:
-                trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
-                
-                if trigger_id == "management-card" and management_clicks:
-                    return self.management_page.create_layout()
-                elif trigger_id == "dashboard-card" and dashboard_clicks:
-                    return self._create_dashboard_layout()
-                elif trigger_id == "back-to-dashboard-btn" and back_clicks:
-                    return self._create_dashboard_layout()
-            
-            # 預設顯示儀表板
+        def display_page(pathname):
+            """顯示主儀表板頁面"""
+            # 現在只顯示儀表板，管理功能通過滑動面板提供
             return self._create_dashboard_layout()
         
-        # 頁面狀態管理
-        @self.app.callback(
-            Output("page-store", "data"),
-            [Input("management-card", "n_clicks"),
-             Input("dashboard-card", "n_clicks"),
-             Input("back-to-dashboard-btn", "n_clicks")],
-            prevent_initial_call=True
-        )
-        def update_page_state(management_clicks, dashboard_clicks, back_clicks):
-            """更新頁面狀態"""
-            ctx = callback_context
-            
-            if ctx.triggered:
-                trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
-                
-                if trigger_id == "management-card" and management_clicks:
-                    return "management"
-                elif trigger_id == "dashboard-card" and dashboard_clicks:
-                    return "dashboard"
-                elif trigger_id == "back-to-dashboard-btn" and back_clicks:
-                    return "dashboard"
-            
-            return "dashboard"
+        # 頁面狀態管理已移除 - 現在只使用滑動面板進行管理
         
         # 全局數據同步回調
         @self.app.callback(
