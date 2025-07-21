@@ -116,6 +116,7 @@ class EEGDashboardApp:
                 <title>{%title%}</title>
                 {%favicon%}
                 {%css%}
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
                 <style>
                     .nav-card:hover {
                         transform: scale(1.05) !important;
@@ -125,6 +126,15 @@ class EEGDashboardApp:
                         transform: scale(1.05) !important;
                         border: 2px solid #fff !important;
                         box-shadow: 0 8px 16px rgba(0,0,0,0.3) !important;
+                    }
+                    .sensor-card {
+                        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                        border-left: 4px solid #007bff;
+                        transition: all 0.3s ease;
+                    }
+                    .sensor-card:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                     }
                 </style>
             </head>
@@ -305,50 +315,10 @@ class EEGDashboardApp:
                     ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
                 ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
-                # 第五行：頁面切換卡片和感測器資料
+                # 第五行：實驗控制和感測器資料
                 html.Div([
-                    # 左側：頁面切換卡片
+                    # 左側：實驗控制面板
                     html.Div([
-                        # 管理中心卡片
-                        html.Div([
-                            html.Div([
-                                html.H4("📊 管理中心",
-                                        style={'fontSize': '18px', 'fontWeight': 'bold',
-                                               'marginBottom': '10px', 'color': '#fff',
-                                               'textAlign': 'center'}),
-                                html.P("受試者註冊\n音效上傳",
-                                      style={'fontSize': '14px', 'color': '#fff',
-                                            'textAlign': 'center', 'margin': '0',
-                                            'whiteSpace': 'pre-line'})
-                            ], style={'padding': '20px', 'cursor': 'pointer',
-                                     'transition': 'all 0.3s ease'}),
-                        ], id="management-card", className="nav-card",
-                           style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                  'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
-                                  'marginBottom': '15px', 'cursor': 'pointer',
-                                  'transform': 'scale(1)', 'transition': 'all 0.3s ease'}),
-                        
-                        # EEG 實驗卡片
-                        html.Div([
-                            html.Div([
-                                html.H4("📈 即時EEG",
-                                        style={'fontSize': '18px', 'fontWeight': 'bold',
-                                               'marginBottom': '10px', 'color': '#fff',
-                                               'textAlign': 'center'}),
-                                html.P("實驗控制\n數據監控",
-                                      style={'fontSize': '14px', 'color': '#fff',
-                                            'textAlign': 'center', 'margin': '0',
-                                            'whiteSpace': 'pre-line'})
-                            ], style={'padding': '20px', 'cursor': 'pointer',
-                                     'transition': 'all 0.3s ease'}),
-                        ], id="dashboard-card", className="nav-card active",
-                           style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                  'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
-                                  'marginBottom': '15px', 'cursor': 'pointer',
-                                  'transform': 'scale(1.05)', 'transition': 'all 0.3s ease',
-                                  'border': '2px solid #fff'}),
-                        
-                        # 實驗控制面板（當在儀表板模式時顯示）
                         html.Div([
                             html.Div([
                                 html.H3("實驗控制",
@@ -433,15 +403,19 @@ class EEGDashboardApp:
                     # 右側：感測器數據
                     html.Div([
                         html.Div([
-                            html.H3("環境感測器",
-                                    style={'fontSize': '18px', 'fontWeight': 'bold',
-                                           'marginBottom': '10px', 'color': '#555'}),
+                            html.H3([
+                                html.I(className="fas fa-thermometer-half", 
+                                      style={'marginRight': '10px', 'color': '#007bff'}),
+                                "環境感測器"
+                            ], style={'fontSize': '18px', 'fontWeight': 'bold',
+                                     'marginBottom': '20px', 'color': '#2c3e50',
+                                     'borderBottom': '2px solid #007bff', 'paddingBottom': '10px'}),
                             html.Div(id="sensor-display",
-                                     style={'fontSize': '12px', 'lineHeight': '1.5',
-                                            'fontFamily': 'monospace'}),
-                        ], style={'background': 'white', 'borderRadius': '8px',
-                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                  'padding': '15px', 'marginBottom': '15px'}),
+                                     style={'lineHeight': '1.6'}),
+                        ], className='sensor-card',
+                           style={'background': 'white', 'borderRadius': '12px',
+                                  'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
+                                  'padding': '20px', 'marginBottom': '15px'}),
                     ], style={'flex': '2', 'padding': '5px', 'minWidth': '300px'}),
                 ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
@@ -917,18 +891,57 @@ class EEGDashboardApp:
             """更新感測器顯示"""
             try:
                 sensor_data = self.data_buffer.get_sensor_data()
+                
+                # 創建更豐富的顯示格式
+                display_components = [
+                    html.Div([
+                        html.Div([
+                            html.I(className="fas fa-thermometer-half", 
+                                  style={'color': '#e74c3c', 'marginRight': '8px', 'fontSize': '16px'}),
+                            html.Span("溫度", style={'fontWeight': 'bold', 'color': '#2c3e50'}),
+                        ], style={'marginBottom': '5px'}),
+                        html.Div(f"{sensor_data['temperature']:.1f}°C", 
+                                style={'fontSize': '18px', 'color': '#e74c3c', 'marginLeft': '24px'})
+                    ], style={'marginBottom': '15px'}),
+                    
+                    html.Div([
+                        html.Div([
+                            html.I(className="fas fa-tint", 
+                                  style={'color': '#3498db', 'marginRight': '8px', 'fontSize': '16px'}),
+                            html.Span("濕度", style={'fontWeight': 'bold', 'color': '#2c3e50'}),
+                        ], style={'marginBottom': '5px'}),
+                        html.Div(f"{sensor_data['humidity']:.1f}%", 
+                                style={'fontSize': '18px', 'color': '#3498db', 'marginLeft': '24px'})
+                    ], style={'marginBottom': '15px'}),
+                    
+                    html.Div([
+                        html.Div([
+                            html.I(className="fas fa-sun", 
+                                  style={'color': '#f39c12', 'marginRight': '8px', 'fontSize': '16px'}),
+                            html.Span("光線", style={'fontWeight': 'bold', 'color': '#2c3e50'}),
+                        ], style={'marginBottom': '5px'}),
+                        html.Div(f"{sensor_data['light']}", 
+                                style={'fontSize': '18px', 'color': '#f39c12', 'marginLeft': '24px'})
+                    ], style={'marginBottom': '15px'}),
+                    
+                    html.Hr(style={'margin': '15px 0', 'border': '1px solid #ecf0f1'}),
+                    
+                    html.Div([
+                        html.I(className="fas fa-clock", 
+                              style={'color': '#95a5a6', 'marginRight': '8px', 'fontSize': '14px'}),
+                        html.Span(f"更新時間: {datetime.now().strftime('%H:%M:%S')}", 
+                                 style={'fontSize': '12px', 'color': '#95a5a6'})
+                    ])
+                ]
 
-                display_text = f"""
-溫度: {sensor_data['temperature']:.1f}°C
-濕度: {sensor_data['humidity']:.1f}%
-光線: {sensor_data['light']}
-更新: {datetime.now().strftime('%H:%M:%S')}
-                """.strip()
-
-                return display_text
+                return display_components
 
             except Exception as e:
-                return f"感測器錯誤: {e}"
+                return html.Div([
+                    html.I(className="fas fa-exclamation-triangle", 
+                          style={'color': '#e74c3c', 'marginRight': '8px'}),
+                    html.Span(f"感測器錯誤: {str(e)}", style={'color': '#e74c3c'})
+                ])
 
         # 實驗控制回調函數
         @self.app.callback(
