@@ -234,7 +234,7 @@ class EEGApplication:
                 raw_value = data['raw_value']
                 self.eeg_buffer.append(raw_value, timestamp)
                 self.processor.add_sample(raw_value)
-                self.db_writer.add_raw_data(timestamp, raw_value)
+                # 注意：已移除 add_raw_data() 調用，避免與 UnifiedRecordAggregator 重複
             
             # 處理認知資料
             if any(key in data for key in ['attention', 'meditation', 'signal_quality']):

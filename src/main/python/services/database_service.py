@@ -237,7 +237,7 @@ class EnhancedDatabaseWriter:
 
     def __init__(self, db_path: str = DATABASE_PATH):
         self.db_path = db_path
-        self.raw_batch_processor = BatchedRawDataProcessor()
+        # self.raw_batch_processor = BatchedRawDataProcessor()  # 已停用，使用 unified_aggregator
         self.unified_aggregator = UnifiedRecordAggregator()
         self.raw_batched_buffer = []
         self.cognitive_buffer = []
@@ -252,7 +252,7 @@ class EnhancedDatabaseWriter:
     def set_current_session(self, session_id: str):
         """設定當前實驗會話ID"""
         self.current_session_id = session_id
-        self.raw_batch_processor.start_new_batch(session_id)
+        # self.raw_batch_processor.start_new_batch(session_id)  # 已停用 BatchedRawDataProcessor
 
     def setup_database(self):
         """建立增強版資料庫表格"""
@@ -465,15 +465,10 @@ class EnhancedDatabaseWriter:
             cur.execute(index_sql)
 
     def add_raw_data(self, timestamp: float, voltage: float):
-        """新增原始資料（批次處理）"""
-        if self.current_session_id is None:
-            print("Warning: No current session set for raw data")
-            return
-            
-        batch_data = self.raw_batch_processor.add_sample(voltage, timestamp)
-        if batch_data:
-            with self.lock:
-                self.raw_batched_buffer.append(batch_data)
+        """新增原始資料（已停用 - 使用 UnifiedRecordAggregator）"""
+        # 此方法已停用，所有原始資料現在通過 UnifiedRecordAggregator 處理
+        # 避免重複寫入和大量資料累積問題
+        print("Warning: add_raw_data() 已停用，請使用 add_data_to_aggregator()")
 
     def add_cognitive_data(self, timestamp: float, attention: int, meditation: int, signal_quality: int):
         """新增認知資料"""
