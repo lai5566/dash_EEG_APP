@@ -57,6 +57,12 @@ class UnifiedRecordAggregator:
         """添加電壓樣本"""
         if self.record_start_time is None:
             self.reset_record(timestamp)
+        
+        # 時間窗口控制：如果時間戳超出當前窗口太多，自動flush
+        if (timestamp - self.record_start_time) > self.aggregation_interval * 2:
+            print(f"[UNIFIED_RECORD_DEBUG] 時間戳異常，自動重置聚合器: {timestamp - self.record_start_time:.3f}s > {self.aggregation_interval * 2:.3f}s")
+            self.reset_record(timestamp)
+            
         self.voltage_samples.append(voltage)
         
     def add_cognitive_sample(self, attention: int = None, meditation: int = None, signal_quality: int = None):
@@ -111,14 +117,17 @@ class UnifiedRecordAggregator:
             'recording_group_id': recording_group_id
         }
         
-        # 處理電壓數據 - 確保有512個樣本
+        # 處理電壓數據 - 確保有512個樣本 (修復引用問題)
         if self.voltage_samples:
-            # 如果樣本數不足512，用最後一個值填充；如果超過，取前512個
-            voltage_array = self.voltage_samples[:512] if len(self.voltage_samples) >= 512 else self.voltage_samples
+            # 創建拷貝，避免修改原始 voltage_samples
+            voltage_array = self.voltage_samples[:512].copy() if len(self.voltage_samples) >= 512 else self.voltage_samples.copy()
+            
+            # 如果樣本數不足512，用最後一個值填充
             if len(voltage_array) < 512:
                 voltage_array.extend([voltage_array[-1]] * (512 - len(voltage_array)))
+            
             record['voltage_data'] = json.dumps(voltage_array)
-            print(f"[UNIFIED_RECORD_DEBUG] Flushed voltage_data with {len(voltage_array)} samples (JSON length: {len(record['voltage_data'])} chars)")
+            print(f"[UNIFIED_RECORD_DEBUG] Flushed voltage_data with {len(voltage_array)} samples from {len(self.voltage_samples)} collected (JSON length: {len(record['voltage_data'])} chars)")
         else:
             print(f"[UNIFIED_RECORD_DEBUG] No voltage samples to flush at {record['timestamp_local']}")
         
