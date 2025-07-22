@@ -2,7 +2,7 @@
 
 # MQTT代理伺服器設定
 MQTT_CONFIG = {
-    'broker_host': '192.168.11.90',
+    'broker_host': '192.168.11.88',
     'broker_port': 1883,
     'username': None,
     'password': None,

@@ -1,7 +1,7 @@
 """EEG配置設定"""
 
 # 串列埠配置
-SERIAL_PORT = "/dev/tty.usbserial-120"
+SERIAL_PORT = "/dev/tty.usbserial-1410"
 BAUD_RATE = 57600
 
 # 資料處理

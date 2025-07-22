@@ -90,7 +90,7 @@ PLATFORM_CONFIG = {
 }
 
 # 全域狀態
-USE_MOCK_DATA = True  # 暫時啟用以測試ASIC功能
+USE_MOCK_DATA = False  # 暫時啟用以測試ASIC功能
 RECORDING_STATE = {
     'is_recording': False,
     'current_group_id': None,

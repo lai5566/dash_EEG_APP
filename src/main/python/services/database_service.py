@@ -118,6 +118,9 @@ class UnifiedRecordAggregator:
             if len(voltage_array) < 512:
                 voltage_array.extend([voltage_array[-1]] * (512 - len(voltage_array)))
             record['voltage_data'] = json.dumps(voltage_array)
+            print(f"[UNIFIED_RECORD_DEBUG] Flushed voltage_data with {len(voltage_array)} samples (JSON length: {len(record['voltage_data'])} chars)")
+        else:
+            print(f"[UNIFIED_RECORD_DEBUG] No voltage samples to flush at {record['timestamp_local']}")
         
         # 處理認知數據 - 取平均值
         if self.cognitive_samples:
@@ -889,6 +892,16 @@ class EnhancedDatabaseWriter:
 
                     # 寫入統一記錄
                     if self.unified_buffer:
+                        print(f"[UNIFIED_RECORD_DEBUG] Writing {len(self.unified_buffer)} unified records to database")
+                        for i, record in enumerate(self.unified_buffer):
+                            # Check voltage_data field (index 11)
+                            voltage_data = record[11]
+                            if voltage_data:
+                                voltage_array = json.loads(voltage_data)
+                                print(f"[UNIFIED_RECORD_DEBUG] Record {i+1}: voltage_data has {len(voltage_array)} samples")
+                            else:
+                                print(f"[UNIFIED_RECORD_DEBUG] Record {i+1}: voltage_data is None/empty")
+                        
                         cur.executemany("""
                             INSERT INTO unified_records 
                             (session_id, timestamp, timestamp_local, recording_group_id, attention, meditation, signal_quality, 
