@@ -32,6 +32,139 @@ class TimeUtils:
         return now, cls.unix_to_local_time(now)
 
 
+class UnifiedRecordAggregator:
+    """1秒統一記錄聚合器"""
+    
+    def __init__(self, aggregation_interval=1.0):
+        self.aggregation_interval = aggregation_interval
+        self.current_record = {}
+        self.record_start_time = None
+        self.voltage_samples = []
+        self.cognitive_samples = []
+        self.sensor_samples = []
+        self.asic_samples = []
+        
+    def reset_record(self, timestamp: float):
+        """重設記錄並開始新的1秒間隔"""
+        self.record_start_time = timestamp
+        self.current_record = {'timestamp': timestamp}
+        self.voltage_samples = []
+        self.cognitive_samples = []
+        self.sensor_samples = []
+        self.asic_samples = []
+        
+    def add_voltage_sample(self, voltage: float, timestamp: float):
+        """添加電壓樣本"""
+        if self.record_start_time is None:
+            self.reset_record(timestamp)
+        self.voltage_samples.append(voltage)
+        
+    def add_cognitive_sample(self, attention: int = None, meditation: int = None, signal_quality: int = None):
+        """添加認知數據樣本"""
+        sample = {}
+        if attention is not None:
+            sample['attention'] = attention
+        if meditation is not None:
+            sample['meditation'] = meditation
+        if signal_quality is not None:
+            sample['signal_quality'] = signal_quality
+        if sample:
+            self.cognitive_samples.append(sample)
+            
+    def add_sensor_sample(self, temperature: float = None, humidity: float = None, light: int = None):
+        """添加感測器數據樣本"""
+        sample = {}
+        if temperature is not None:
+            sample['temperature'] = temperature
+        if humidity is not None:
+            sample['humidity'] = humidity
+        if light is not None:
+            sample['light'] = light
+        if sample:
+            self.sensor_samples.append(sample)
+            
+    def add_asic_sample(self, bands_data: list):
+        """添加ASIC頻帶數據樣本"""
+        if len(bands_data) >= 8:
+            self.asic_samples.append(bands_data)
+            
+    def add_blink_event(self, intensity: int):
+        """添加眨眼事件"""
+        self.current_record['blink_intensity'] = intensity
+        
+    def should_flush(self, current_timestamp: float) -> bool:
+        """檢查是否應該flush當前記錄"""
+        if self.record_start_time is None:
+            return False
+        return (current_timestamp - self.record_start_time) >= self.aggregation_interval
+        
+    def flush_record(self, session_id: str, recording_group_id: str = None):
+        """flush並返回聚合的統一記錄"""
+        if self.record_start_time is None:
+            return None
+            
+        # 構建基本記錄
+        record = {
+            'session_id': session_id,
+            'timestamp': self.record_start_time,
+            'timestamp_local': TimeUtils.unix_to_local_time(self.record_start_time),
+            'recording_group_id': recording_group_id
+        }
+        
+        # 處理電壓數據 - 確保有512個樣本
+        if self.voltage_samples:
+            # 如果樣本數不足512，用最後一個值填充；如果超過，取前512個
+            voltage_array = self.voltage_samples[:512] if len(self.voltage_samples) >= 512 else self.voltage_samples
+            if len(voltage_array) < 512:
+                voltage_array.extend([voltage_array[-1]] * (512 - len(voltage_array)))
+            record['voltage_data'] = json.dumps(voltage_array)
+        
+        # 處理認知數據 - 取平均值
+        if self.cognitive_samples:
+            attention_values = [s.get('attention') for s in self.cognitive_samples if s.get('attention') is not None]
+            meditation_values = [s.get('meditation') for s in self.cognitive_samples if s.get('meditation') is not None]
+            signal_quality_values = [s.get('signal_quality') for s in self.cognitive_samples if s.get('signal_quality') is not None]
+            
+            if attention_values:
+                record['attention'] = int(np.mean(attention_values))
+            if meditation_values:
+                record['meditation'] = int(np.mean(meditation_values))
+            if signal_quality_values:
+                record['signal_quality'] = int(np.mean(signal_quality_values))
+                
+        # 處理感測器數據 - 取平均值
+        if self.sensor_samples:
+            temp_values = [s.get('temperature') for s in self.sensor_samples if s.get('temperature') is not None]
+            humidity_values = [s.get('humidity') for s in self.sensor_samples if s.get('humidity') is not None]
+            light_values = [s.get('light') for s in self.sensor_samples if s.get('light') is not None]
+            
+            if temp_values:
+                record['temperature'] = float(np.mean(temp_values))
+            if humidity_values:
+                record['humidity'] = float(np.mean(humidity_values))
+            if light_values:
+                record['light'] = int(np.mean(light_values))
+                
+        # 處理ASIC頻帶數據 - 取平均值
+        if self.asic_samples:
+            bands_avg = np.mean(self.asic_samples, axis=0)
+            if len(bands_avg) >= 8:
+                record['delta_power'] = int(bands_avg[0])
+                record['theta_power'] = int(bands_avg[1])
+                record['low_alpha_power'] = int(bands_avg[2])
+                record['high_alpha_power'] = int(bands_avg[3])
+                record['low_beta_power'] = int(bands_avg[4])
+                record['high_beta_power'] = int(bands_avg[5])
+                record['low_gamma_power'] = int(bands_avg[6])
+                record['mid_gamma_power'] = int(bands_avg[7])
+                
+        # 處理眨眼事件
+        if 'blink_intensity' in self.current_record:
+            record['blink_intensity'] = self.current_record['blink_intensity']
+            
+        return record
+
+
 class BatchedRawDataProcessor:
     """批次原始資料處理器"""
     
@@ -93,6 +226,7 @@ class EnhancedDatabaseWriter:
     def __init__(self, db_path: str = DATABASE_PATH):
         self.db_path = db_path
         self.raw_batch_processor = BatchedRawDataProcessor()
+        self.unified_aggregator = UnifiedRecordAggregator()
         self.raw_batched_buffer = []
         self.cognitive_buffer = []
         self.asic_buffer = []
@@ -260,7 +394,7 @@ class EnhancedDatabaseWriter:
                 humidity REAL,
                 light INTEGER,
                 blink_intensity INTEGER,
-                raw_voltage_avg REAL,
+                voltage_data TEXT,
                 delta_power INTEGER,
                 theta_power INTEGER,
                 low_alpha_power INTEGER,
@@ -369,8 +503,78 @@ class EnhancedDatabaseWriter:
         with self.lock:
             self.sensor_buffer.append((self.current_session_id, timestamp, timestamp_local, temperature, humidity, light))
 
+    def add_data_to_aggregator(self, timestamp: float, recording_group_id: str = None, **data):
+        """將數據添加到統一記錄聚合器"""
+        if self.current_session_id is None:
+            print("Warning: No current session set for unified record")
+            return
+            
+        with self.lock:
+            # 檢查是否需要flush當前記錄
+            if self.unified_aggregator.should_flush(timestamp):
+                # 使用傳入的錄音群組ID或從數據中獲取
+                current_group_id = recording_group_id or data.get('recording_group_id')
+                
+                flushed_record = self.unified_aggregator.flush_record(
+                    self.current_session_id, 
+                    current_group_id
+                )
+                
+                if flushed_record:
+                    # 轉換為數據庫格式
+                    db_record = (
+                        flushed_record['session_id'],
+                        flushed_record['timestamp'],
+                        flushed_record['timestamp_local'],
+                        flushed_record.get('recording_group_id'),
+                        flushed_record.get('attention'),
+                        flushed_record.get('meditation'),
+                        flushed_record.get('signal_quality'),
+                        flushed_record.get('temperature'),
+                        flushed_record.get('humidity'),
+                        flushed_record.get('light'),
+                        flushed_record.get('blink_intensity'),
+                        flushed_record.get('voltage_data'),
+                        flushed_record.get('delta_power'),
+                        flushed_record.get('theta_power'),
+                        flushed_record.get('low_alpha_power'),
+                        flushed_record.get('high_alpha_power'),
+                        flushed_record.get('low_beta_power'),
+                        flushed_record.get('high_beta_power'),
+                        flushed_record.get('low_gamma_power'),
+                        flushed_record.get('mid_gamma_power')
+                    )
+                    self.unified_buffer.append(db_record)
+                
+                # 重設聚合器
+                self.unified_aggregator.reset_record(timestamp)
+            
+            # 添加新數據到聚合器
+            if 'raw_value' in data:
+                self.unified_aggregator.add_voltage_sample(data['raw_value'], timestamp)
+            
+            if any(key in data for key in ['attention', 'meditation', 'signal_quality']):
+                self.unified_aggregator.add_cognitive_sample(
+                    attention=data.get('attention'),
+                    meditation=data.get('meditation'),
+                    signal_quality=data.get('signal_quality')
+                )
+                
+            if any(key in data for key in ['temperature', 'humidity', 'light']):
+                self.unified_aggregator.add_sensor_sample(
+                    temperature=data.get('temperature'),
+                    humidity=data.get('humidity'),
+                    light=data.get('light')
+                )
+                
+            if 'asic_bands' in data:
+                self.unified_aggregator.add_asic_sample(data['asic_bands'])
+                
+            if 'blink' in data:
+                self.unified_aggregator.add_blink_event(data['blink'])
+
     def add_unified_record(self, timestamp: float, recording_group_id: str = None, **kwargs):
-        """新增統一記錄"""
+        """新增統一記錄 (舊版本，保持向後兼容)"""
         if self.current_session_id is None:
             print("Warning: No current session set for unified record")
             return
@@ -389,7 +593,7 @@ class EnhancedDatabaseWriter:
                 kwargs.get('humidity'),
                 kwargs.get('light'),
                 kwargs.get('blink_intensity'),
-                kwargs.get('raw_voltage'),
+                kwargs.get('voltage_data'),  # 改為 voltage_data
                 kwargs.get('delta_power'),
                 kwargs.get('theta_power'),
                 kwargs.get('low_alpha_power'),
@@ -688,7 +892,7 @@ class EnhancedDatabaseWriter:
                         cur.executemany("""
                             INSERT INTO unified_records 
                             (session_id, timestamp, timestamp_local, recording_group_id, attention, meditation, signal_quality, 
-                             temperature, humidity, light, blink_intensity, raw_voltage_avg,
+                             temperature, humidity, light, blink_intensity, voltage_data,
                              delta_power, theta_power, low_alpha_power, high_alpha_power,
                              low_beta_power, high_beta_power, low_gamma_power, mid_gamma_power)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
