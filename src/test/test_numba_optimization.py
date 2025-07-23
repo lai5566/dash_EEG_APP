@@ -10,7 +10,11 @@ Numba優化測試腳本
 4. 生成詳細的性能報告
 
 使用方法:
-python test_numba_optimization.py
+# 從專案根目錄運行
+python -m src.test.test_numba_optimization
+
+# 或直接運行
+python src/test/test_numba_optimization.py
 """
 
 import sys
@@ -18,7 +22,8 @@ import os
 import numpy as np
 
 # 將專案路徑添加到Python路徑
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src', 'main', 'python'))
+# 從 src/test/ 目錄導航到 src/main/python/
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'main', 'python'))
 
 try:
     from core.numba_optimized import check_numba_performance, NUMBA_AVAILABLE
