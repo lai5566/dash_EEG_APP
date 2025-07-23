@@ -324,6 +324,20 @@ class EEGDashboardApp:
                                 html.H3("實驗控制",
                                         style={'fontSize': '18px', 'fontWeight': 'bold',
                                                'marginBottom': '10px', 'color': '#555'}),
+                                
+                                # 快速測試會話按鈕
+                                html.Div([
+                                    html.Button("⚡ 快速測試會話", id="quick-test-session-btn",
+                                                style={'width': '100%', 'padding': '12px 20px',
+                                                       'fontSize': '16px', 'fontWeight': 'bold',
+                                                       'backgroundColor': '#17a2b8', 'color': 'white',
+                                                       'border': 'none', 'borderRadius': '6px',
+                                                       'cursor': 'pointer', 'marginBottom': '15px',
+                                                       'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
+                                    html.Hr(style={'margin': '15px 0', 'borderColor': '#dee2e6'}),
+                                    html.P("或設置完整實驗參數：", 
+                                           style={'fontSize': '14px', 'color': '#6c757d', 'marginBottom': '10px', 'textAlign': 'center'})
+                                ]),
                             
                             # 受試者選擇
                             html.Div([
@@ -389,10 +403,12 @@ class EEGDashboardApp:
                                                    'cursor': 'pointer', 'width': '48%', 'disabled': True}),
                             ], style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'space-between'}),
                             
-                            # 狀態顯示
+                            # 狀態顯示 - 突出顯示會話狀態
                             html.Div(id="experiment-status",
-                                     style={'fontSize': '12px', 'color': '#666', 'marginTop': '10px',
-                                            'padding': '8px', 'backgroundColor': '#f8f9fa', 'borderRadius': '4px'}),
+                                     style={'fontSize': '16px', 'fontWeight': 'bold', 'marginTop': '15px',
+                                            'padding': '15px', 'backgroundColor': '#e3f2fd', 'borderRadius': '8px',
+                                            'border': '2px solid #2196f3', 'textAlign': 'center',
+                                            'boxShadow': '0 2px 8px rgba(33, 150, 243, 0.2)'}),
                             ], style={'background': 'white', 'borderRadius': '8px',
                                       'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
                                       'padding': '15px', 'marginBottom': '15px'}),
@@ -944,13 +960,14 @@ class EEGDashboardApp:
              Input("start-recording-btn", "n_clicks"), 
              Input("stop-recording-btn", "n_clicks"),
              Input("stop-experiment-btn", "n_clicks"),
+             Input("quick-test-session-btn", "n_clicks"),
              Input("interval", "n_intervals")],
             [State("subject-dropdown", "value"),
              State("ambient-sound-dropdown", "value"),
              State("eye-state-dropdown", "value")],
             prevent_initial_call=True
         )
-        def handle_experiment_control(start_exp_clicks, start_rec_clicks, stop_rec_clicks, stop_exp_clicks, n,
+        def handle_experiment_control(start_exp_clicks, start_rec_clicks, stop_rec_clicks, stop_exp_clicks, quick_test_clicks, n,
                                      subject_id, ambient_sound_id, eye_state):
             """處理實驗控制流程"""
             try:
@@ -966,7 +983,33 @@ class EEGDashboardApp:
 
                 button_id = ctx.triggered[0]['prop_id'].split('.')[0]
                 
-                if button_id == "start-experiment-btn" and start_exp_clicks:
+                if button_id == "quick-test-session-btn" and quick_test_clicks:
+                    if not self.experiment_state['experiment_running']:
+                        # 創建快速測試會話 - 使用默認參數
+                        test_subject_id = f"test_user_{int(time.time())}"
+                        session_id = self.db_writer.start_experiment_session(
+                            subject_id=test_subject_id,
+                            eye_state="open",
+                            ambient_sound_id=None,
+                            researcher_name="QuickTest",
+                            notes="Quick test session - auto-generated"
+                        )
+                        
+                        if session_id:
+                            self.experiment_state.update({
+                                'current_session_id': session_id,
+                                'experiment_running': True,
+                                'selected_subject': test_subject_id,
+                                'selected_sound': None,
+                                'selected_eye_state': "open"
+                            })
+                            return f"🚀 快速測試會話已啟動 | 會話ID: {session_id} | 受試者: {test_subject_id}"
+                        else:
+                            return "❌ 快速測試會話啟動失敗"
+                    else:
+                        return "⚠️ 實驗已在進行中，請先停止當前實驗"
+                
+                elif button_id == "start-experiment-btn" and start_exp_clicks:
                     if not subject_id:
                         return "❌ 請先選擇受試者ID"
                     
