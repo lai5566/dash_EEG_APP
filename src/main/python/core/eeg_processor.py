@@ -1,4 +1,4 @@
-"""核心EEG信號處理模組"""
+"""核心EEG信號處理模組 - 整合Numba優化"""
 
 import numpy as np
 import threading
@@ -9,9 +9,26 @@ from scipy.fft import fft, fftfreq
 import logging
 import sys
 import os
+
 # 添加配置文件路徑
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
 from app_config import FFT_TEST_DATA_CONFIG
+
+# 導入Numba優化函數
+try:
+    from .numba_optimized import (
+        hanning_window_numba, power_spectrum_numba, band_power_extraction_numba,
+        signal_quality_z_score_numba, spectral_features_numba, NUMBA_AVAILABLE
+    )
+    USE_NUMBA = True
+    logger = logging.getLogger(__name__)
+    logger.info("🚀 Numba optimizations loaded for EEG processing")
+except ImportError as e:
+    USE_NUMBA = False
+    NUMBA_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning(f"⚠️ Numba optimizations not available: {e}")
+    logger.info("📊 Falling back to standard NumPy implementations")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -77,30 +94,42 @@ class EEGProcessor:
                 return raw_data
     
     def compute_power_spectrum(self, data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """使用FFT計算功率譜"""
+        """使用FFT計算功率譜 - Numba優化版本"""
         try:
-            # 套用視窗函數
-            windowed = data * np.hanning(len(data))
-            
-            # 計算FFT
-            fft_data = fft(windowed)
-            freqs = fftfreq(len(data), 1/self.sample_rate)
-            
-            # 計算功率譜密度
-            psd = np.abs(fft_data) ** 2
-            
-            # 只取正頻率
-            positive_freqs = freqs[:len(freqs)//2]
-            positive_psd = psd[:len(psd)//2]
-            
-            return positive_freqs, positive_psd
+            if USE_NUMBA and NUMBA_AVAILABLE:
+                # 使用Numba優化的窗函數
+                windowed = data * hanning_window_numba(len(data))
+                
+                # 計算FFT (仍使用SciPy，因為它已經高度優化)
+                fft_data = fft(windowed)
+                freqs = fftfreq(len(data), 1/self.sample_rate)
+                
+                # 使用Numba優化的功率譜計算
+                psd = power_spectrum_numba(fft_data)
+                
+                # 只取正頻率
+                positive_freqs = freqs[:len(freqs)//2]
+                positive_psd = psd[:len(psd)//2]
+                
+                return positive_freqs, positive_psd
+            else:
+                # 回退到標準NumPy實現
+                windowed = data * np.hanning(len(data))
+                fft_data = fft(windowed)
+                freqs = fftfreq(len(data), 1/self.sample_rate)
+                psd = np.abs(fft_data) ** 2
+                
+                positive_freqs = freqs[:len(freqs)//2]
+                positive_psd = psd[:len(psd)//2]
+                
+                return positive_freqs, positive_psd
             
         except Exception as e:
             logger.error(f"Error computing power spectrum: {e}")
             return np.array([]), np.array([])
     
     def extract_band_powers(self, data: np.ndarray) -> Dict[str, float]:
-        """提取不同頻率帶的功率"""
+        """提取不同頻率帶的功率 - Numba優化版本"""
         try:
             freqs, psd = self.compute_power_spectrum(data)
             
@@ -109,16 +138,21 @@ class EEGProcessor:
             
             band_powers = {}
             
-            for band_name, (low_freq, high_freq) in self.frequency_bands.items():
-                # 找出頻率索引
-                band_indices = np.where((freqs >= low_freq) & (freqs <= high_freq))[0]
-                
-                if len(band_indices) > 0:
-                    # 計算頻率帶的平均功率
-                    band_power = np.mean(psd[band_indices])
+            if USE_NUMBA and NUMBA_AVAILABLE:
+                # 使用Numba優化的頻帶功率提取
+                for band_name, (low_freq, high_freq) in self.frequency_bands.items():
+                    band_power = band_power_extraction_numba(psd, freqs, low_freq, high_freq)
                     band_powers[band_name] = float(band_power)
-                else:
-                    band_powers[band_name] = 0.0
+            else:
+                # 回退到標準NumPy實現
+                for band_name, (low_freq, high_freq) in self.frequency_bands.items():
+                    band_indices = np.where((freqs >= low_freq) & (freqs <= high_freq))[0]
+                    
+                    if len(band_indices) > 0:
+                        band_power = np.mean(psd[band_indices])
+                        band_powers[band_name] = float(band_power)
+                    else:
+                        band_powers[band_name] = 0.0
             
             return band_powers
             
@@ -172,23 +206,30 @@ class EEGProcessor:
             return []
     
     def calculate_spectral_features(self, data: np.ndarray) -> Dict[str, float]:
-        """計算頻譜特徵"""
+        """計算頻譜特徵 - Numba優化版本"""
         try:
             freqs, psd = self.compute_power_spectrum(data)
             
             if len(freqs) == 0:
                 return {'spectral_centroid': 0.0, 'spectral_bandwidth': 0.0}
             
-            # 頻譜質心
-            spectral_centroid = np.sum(freqs * psd) / np.sum(psd)
-            
-            # 頻譜頻寬
-            spectral_bandwidth = np.sqrt(np.sum(((freqs - spectral_centroid) ** 2) * psd) / np.sum(psd))
-            
-            return {
-                'spectral_centroid': float(spectral_centroid),
-                'spectral_bandwidth': float(spectral_bandwidth)
-            }
+            if USE_NUMBA and NUMBA_AVAILABLE:
+                # 使用Numba優化的頻譜特徵計算
+                spectral_centroid, spectral_bandwidth = spectral_features_numba(freqs, psd)
+                
+                return {
+                    'spectral_centroid': float(spectral_centroid),
+                    'spectral_bandwidth': float(spectral_bandwidth)
+                }
+            else:
+                # 回退到標準NumPy實現
+                spectral_centroid = np.sum(freqs * psd) / np.sum(psd)
+                spectral_bandwidth = np.sqrt(np.sum(((freqs - spectral_centroid) ** 2) * psd) / np.sum(psd))
+                
+                return {
+                    'spectral_centroid': float(spectral_centroid),
+                    'spectral_bandwidth': float(spectral_bandwidth)
+                }
             
         except Exception as e:
             logger.error(f"Error calculating spectral features: {e}")
@@ -224,20 +265,25 @@ class EEGProcessor:
             return {}
     
     def _calculate_signal_quality(self, data: np.ndarray) -> float:
-        """計算信號品質分數 (0-100)"""
+        """計算信號品質分數 (0-100) - Numba優化版本"""
         try:
-            # 計算信噪比估計
-            signal_power = np.var(data)
-            noise_estimate = np.var(np.diff(data))  # 高頻雜訊
-            
-            if noise_estimate > 0:
-                snr = 10 * np.log10(signal_power / noise_estimate)
-                # 將信噪比映射到0-100範圍
-                quality = min(100, max(0, (snr + 10) * 5))
+            if USE_NUMBA and NUMBA_AVAILABLE:
+                # 使用Numba優化的信號品質計算
+                quality = signal_quality_z_score_numba(data)
+                return float(quality)
             else:
-                quality = 100
-            
-            return float(quality)
+                # 回退到標準NumPy實現
+                signal_power = np.var(data)
+                noise_estimate = np.var(np.diff(data))  # 高頻雜訊
+                
+                if noise_estimate > 0:
+                    snr = 10 * np.log10(signal_power / noise_estimate)
+                    # 將信噪比映射到0-100範圍
+                    quality = min(100, max(0, (snr + 10) * 5))
+                else:
+                    quality = 100
+                
+                return float(quality)
             
         except Exception as e:
             logger.error(f"Error calculating signal quality: {e}")

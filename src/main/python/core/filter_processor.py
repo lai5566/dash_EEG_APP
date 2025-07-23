@@ -1,4 +1,4 @@
-"""EEG信號的優化濾波處理器"""
+"""EEG信號的優化濾波處理器 - 整合Numba加速"""
 
 import numpy as np
 import threading
@@ -7,6 +7,20 @@ from typing import Dict, List, Tuple, Optional, Any
 from concurrent.futures import ThreadPoolExecutor
 from scipy.signal import butter, sosfiltfilt
 import logging
+
+# 導入Numba優化函數
+try:
+    from .numba_optimized import (
+        filter_power_calculation_numba, NUMBA_AVAILABLE
+    )
+    USE_NUMBA = True
+    logger = logging.getLogger(__name__)
+    logger.info("🚀 Numba optimizations loaded for filter processing")
+except ImportError as e:
+    USE_NUMBA = False
+    NUMBA_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning(f"⚠️ Numba optimizations not available: {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -138,15 +152,20 @@ class OptimizedFilterProcessor:
             return {name: np.zeros_like(data) for name in self.bands.keys()}
             
     def compute_band_powers(self, data: np.ndarray) -> Dict[str, float]:
-        """計算每個頻率帶的功率"""
+        """計算每個頻率帶的功率 - Numba優化版本"""
         try:
             filtered_data = self.process_bands_parallel(data)
             
             band_powers = {}
             for name, filtered_signal in filtered_data.items():
                 if len(filtered_signal) > 0:
-                    # 計算RMS功率
-                    power = np.mean(filtered_signal ** 2)
+                    if USE_NUMBA and NUMBA_AVAILABLE:
+                        # 使用Numba優化的功率計算
+                        power = filter_power_calculation_numba(filtered_signal)
+                    else:
+                        # 回退到標準NumPy實現
+                        power = np.mean(filtered_signal ** 2)
+                    
                     band_powers[name] = float(power)
                 else:
                     band_powers[name] = 0.0
