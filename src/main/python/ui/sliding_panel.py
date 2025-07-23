@@ -12,6 +12,7 @@ from dash import dcc, html, Input, Output, State, callback_context
 from mutagen import File as MutagenFile
 
 from services.database_service import EnhancedDatabaseWriter
+from ui.session_history_page import SessionHistoryPage
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class SlidingPanel:
     
     def __init__(self, db_writer: EnhancedDatabaseWriter):
         self.db_writer = db_writer
+        self.session_history_page = SessionHistoryPage(db_writer)
         
     def create_panel_layout(self):
         """創建滑動面板佈局"""
@@ -71,16 +73,23 @@ class SlidingPanel:
                         html.Div([
                             html.Button("👤 受試者管理", id="subjects-tab-btn", 
                                        className="tab-button active",
-                                       style={'flex': '1', 'padding': '12px 20px', 
+                                       style={'flex': '1', 'padding': '12px 16px', 
                                              'border': 'none', 'backgroundColor': '#3498db',
-                                             'color': 'white', 'fontSize': '14px', 
+                                             'color': 'white', 'fontSize': '13px', 
                                              'cursor': 'pointer', 'fontWeight': 'bold',
                                              'borderRadius': '8px 0 0 8px'}),
                             html.Button("🎵 音效管理", id="sounds-tab-btn",
                                        className="tab-button",
-                                       style={'flex': '1', 'padding': '12px 20px',
+                                       style={'flex': '1', 'padding': '12px 16px',
                                              'border': 'none', 'backgroundColor': '#95a5a6',
-                                             'color': 'white', 'fontSize': '14px',
+                                             'color': 'white', 'fontSize': '13px',
+                                             'cursor': 'pointer', 'fontWeight': 'bold',
+                                             'borderRadius': '0'}),
+                            html.Button("📊 歷史記錄", id="history-tab-btn",
+                                       className="tab-button",
+                                       style={'flex': '1', 'padding': '12px 16px',
+                                             'border': 'none', 'backgroundColor': '#95a5a6',
+                                             'color': 'white', 'fontSize': '13px',
                                              'cursor': 'pointer', 'fontWeight': 'bold',
                                              'borderRadius': '0 8px 8px 0'})
                         ], style={'display': 'flex', 'margin': '20px 30px', 'gap': '2px'}),
@@ -334,7 +343,12 @@ class SlidingPanel:
                                                   'padding': '10px'}),
                                 ])
                                 
-                            ], id="sounds-content", style={'display': 'none'})
+                            ], id="sounds-content", style={'display': 'none'}),
+                            
+                            # Session 歷史記錄標籤內容
+                            html.Div([
+                                self.session_history_page.create_layout()
+                            ], id="history-content", style={'display': 'none'})
                             
                         ], style={'padding': '0 30px 30px', 'height': 'calc(100vh - 200px)', 
                                  'overflowY': 'auto'})
@@ -440,51 +454,87 @@ class SlidingPanel:
         @app.callback(
             [Output("subjects-tab-btn", "style"),
              Output("sounds-tab-btn", "style"),
+             Output("history-tab-btn", "style"),
              Output("subjects-content", "style"),
-             Output("sounds-content", "style")],
+             Output("sounds-content", "style"),
+             Output("history-content", "style")],
             [Input("subjects-tab-btn", "n_clicks"),
-             Input("sounds-tab-btn", "n_clicks")],
+             Input("sounds-tab-btn", "n_clicks"),
+             Input("history-tab-btn", "n_clicks")],
             prevent_initial_call=True
         )
-        def switch_tabs(subjects_clicks, sounds_clicks):
+        def switch_tabs(subjects_clicks, sounds_clicks, history_clicks):
             """切換標籤內容"""
             ctx = callback_context
             if not ctx.triggered:
-                return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+                return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
             
             trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
             
             if trigger_id == "subjects-tab-btn":
                 # 切換到受試者標籤
                 subjects_tab_style = {
-                    'flex': '1', 'padding': '12px 20px', 'border': 'none', 
-                    'backgroundColor': '#3498db', 'color': 'white', 'fontSize': '14px', 
+                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
+                    'backgroundColor': '#3498db', 'color': 'white', 'fontSize': '13px', 
                     'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '8px 0 0 8px'
                 }
                 sounds_tab_style = {
-                    'flex': '1', 'padding': '12px 20px', 'border': 'none', 
-                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '14px',
+                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
+                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px',
+                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0'
+                }
+                history_tab_style = {
+                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
+                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px',
                     'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0 8px 8px 0'
                 }
                 subjects_content_style = {'display': 'block'}
                 sounds_content_style = {'display': 'none'}
+                history_content_style = {'display': 'none'}
                 
-            else:  # sounds-tab-btn
+            elif trigger_id == "sounds-tab-btn":
                 # 切換到音效標籤
                 subjects_tab_style = {
-                    'flex': '1', 'padding': '12px 20px', 'border': 'none', 
-                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '14px', 
+                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
+                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px', 
                     'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '8px 0 0 8px'
                 }
                 sounds_tab_style = {
-                    'flex': '1', 'padding': '12px 20px', 'border': 'none', 
-                    'backgroundColor': '#e74c3c', 'color': 'white', 'fontSize': '14px',
+                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
+                    'backgroundColor': '#e74c3c', 'color': 'white', 'fontSize': '13px',
+                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0'
+                }
+                history_tab_style = {
+                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
+                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px',
                     'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0 8px 8px 0'
                 }
                 subjects_content_style = {'display': 'none'}
                 sounds_content_style = {'display': 'block'}
+                history_content_style = {'display': 'none'}
+                
+            else:  # history-tab-btn
+                # 切換到歷史記錄標籤
+                subjects_tab_style = {
+                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
+                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px', 
+                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '8px 0 0 8px'
+                }
+                sounds_tab_style = {
+                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
+                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px',
+                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0'
+                }
+                history_tab_style = {
+                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
+                    'backgroundColor': '#27ae60', 'color': 'white', 'fontSize': '13px',
+                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0 8px 8px 0'
+                }
+                subjects_content_style = {'display': 'none'}
+                sounds_content_style = {'display': 'none'}
+                history_content_style = {'display': 'block'}
             
-            return subjects_tab_style, sounds_tab_style, subjects_content_style, sounds_content_style
+            return subjects_tab_style, sounds_tab_style, history_tab_style, subjects_content_style, sounds_content_style, history_content_style
         
         # 受試者管理回調
         @app.callback(
@@ -753,3 +803,6 @@ class SlidingPanel:
                 sounds_cards.append(card)
             
             return sounds_cards
+        
+        # 註冊 Session 歷史頁面的回調
+        self.session_history_page.register_callbacks(app)

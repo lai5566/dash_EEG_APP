@@ -26,7 +26,6 @@ from utils.data_utils import DataValidator, DataProcessor
 from resources.config.app_config import UI_CONFIG, PROCESSING_CONFIG, API_CONFIG
 from ui.management_page import ManagementPage
 from ui.sliding_panel import SlidingPanel
-from ui.session_history_page import SessionHistoryPage
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +53,6 @@ class EEGDashboardApp:
 
         # 初始化滑動面板
         self.sliding_panel = SlidingPanel(self.db_writer)
-
-        # 初始化 Session 歷史頁面
-        self.session_history_page = SessionHistoryPage(self.db_writer)
 
         # 效能監控
         self.performance_monitor = {
@@ -108,9 +104,6 @@ class EEGDashboardApp:
 
         # 註冊滑動面板回調
         self.sliding_panel.register_callbacks(self.app)
-
-        # 註冊 Session 歷史頁面回調
-        self.session_history_page.register_callbacks(self.app)
 
     def _setup_layout(self):
         """設定主要版面配置"""
@@ -182,15 +175,12 @@ class EEGDashboardApp:
     def _create_dashboard_layout(self):
         """創建儀表板頁面佈局"""
         return html.Div([
-            # 主要佈局：左側為儀表板，右側為 Session 歷史
+
+            # 第一行：FFT頻帶分析
             html.Div([
-                # 左側：EEG 儀表板區域
                 html.Div([
-                    # 第一行：FFT頻帶分析
                     html.Div([
-                        html.Div([
-                            html.Div([
-                                html.H3("FFT Band Analysis",
+                        html.H3("FFT Band Analysis",
                                         style={'fontSize': '18px', 'fontWeight': 'bold',
                                                'marginBottom': '10px', 'color': '#555'}),
                                 dcc.Graph(id="fft-bands-main",
@@ -408,24 +398,13 @@ class EEGDashboardApp:
                 ], style={'flex': '2', 'padding': '5px', 'minWidth': '300px'}),
             ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
-                    # 狀態列
-                    html.Div([
-                        html.Div(id="performance-status",
-                                 style={'fontSize': '12px', 'color': '#666',
-                                        'textAlign': 'center', 'padding': '10px',
-                                        'borderTop': '1px solid #eee'}),
-                    ]),
-
-                ], style={'flex': '2', 'padding': '10px', 'minWidth': '600px'}),
-
-                # 右側：Session 歷史管理區域
-                html.Div([
-                    # Session 歷史頁面內容
-                    self.session_history_page.create_layout()
-                ], style={'flex': '1', 'padding': '10px', 'minWidth': '400px', 
-                         'maxWidth': '500px', 'borderLeft': '1px solid #dee2e6'}),
-
-            ], style={'display': 'flex', 'minHeight': '100vh'}),
+            # 狀態列
+            html.Div([
+                html.Div(id="performance-status",
+                         style={'fontSize': '12px', 'color': '#666',
+                                'textAlign': 'center', 'padding': '10px',
+                                'borderTop': '1px solid #eee'}),
+            ]),
 
             # 間隔組件
             dcc.Interval(id="interval",
