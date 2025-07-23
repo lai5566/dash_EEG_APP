@@ -1093,7 +1093,7 @@ class AudioRecorder:
                     self.recording_data) > 0:
                 try:
                     # 建立錄音檔案目錄
-                    recordings_dir = "recordings"
+                    recordings_dir = "../recordings"
                     os.makedirs(recordings_dir, exist_ok=True)
                     print(f"📁 錄音目錄已準備: {recordings_dir}")
 

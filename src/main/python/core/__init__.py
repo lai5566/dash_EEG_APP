@@ -14,8 +14,8 @@ try:
     if numba_status['available']:
         import logging
         logger = logging.getLogger(__name__)
-        logger.info("🚀 EEG核心模組已整合Numba優化")
-        logger.info(f"📊 Numba狀態: {numba_status['message']}")
+        logger.info("EEG core module integrated with Numba optimization")
+        logger.info(f"Numba status: {numba_status['message']}")
         
         # 導出優化標識
         __numba_enabled__ = True

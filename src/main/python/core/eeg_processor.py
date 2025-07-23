@@ -22,13 +22,13 @@ try:
     )
     USE_NUMBA = True
     logger = logging.getLogger(__name__)
-    logger.info("🚀 Numba optimizations loaded for EEG processing")
+    logger.info("Numba optimizations loaded for EEG processing")
 except ImportError as e:
     USE_NUMBA = False
     NUMBA_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning(f"⚠️ Numba optimizations not available: {e}")
-    logger.info("📊 Falling back to standard NumPy implementations")
+    logger.warning(f"WARNING: Numba optimizations not available: {e}")
+    logger.info("Falling back to standard NumPy implementations")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

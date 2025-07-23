@@ -291,10 +291,10 @@ class NumbaPerformanceBenchmark:
     def run_all_benchmarks(self) -> Dict:
         """運行所有基準測試"""
         if not BENCHMARK_AVAILABLE:
-            logger.error("❌ Numba benchmark not available - missing dependencies")
+            logger.error("ERROR: Numba benchmark not available - missing dependencies")
             return {}
         
-        logger.info("🚀 開始Numba性能基準測試...")
+        logger.info("Starting Numba performance benchmarks...")
         
         benchmarks = {
             'hanning_window': self.benchmark_hanning_window,
@@ -307,7 +307,7 @@ class NumbaPerformanceBenchmark:
         
         results = {}
         for name, benchmark_func in benchmarks.items():
-            logger.info(f"📊 測試 {name}...")
+            logger.info(f"Testing {name}...")
             results[name] = benchmark_func()
         
         self.results = results
@@ -316,14 +316,14 @@ class NumbaPerformanceBenchmark:
     def print_results(self):
         """打印基準測試結果"""
         if not self.results:
-            logger.warning("⚠️ 沒有基準測試結果可顯示")
+            logger.warning("WARNING: No benchmark results to display")
             return
         
-        print("\n🎯 Numba性能基準測試結果")
+        print("\nNumba Performance Benchmark Results")
         print("=" * 80)
         
         for func_name, func_results in self.results.items():
-            print(f"\n📈 {func_name.replace('_', ' ').title()}")
+            print(f"\n{func_name.replace('_', ' ').title()}")
             print("-" * 60)
             
             print(f"{'數據大小':<10} {'NumPy(ms)':<12} {'Numba(ms)':<12} {'加速比':<10} {'狀態'}")
@@ -335,22 +335,22 @@ class NumbaPerformanceBenchmark:
                 speedup = func_results['speedup'].get(size, 0)
                 
                 if speedup == float('inf'):
-                    status = "❌ 錯誤"
+                    status = "ERROR"
                     speedup_str = "N/A"
                 elif speedup > 1.5:
-                    status = "🚀 優化"
+                    status = "FASTER"
                     speedup_str = f"{speedup:.2f}x"
                 elif speedup > 0.8:
-                    status = "➡️ 相近"
+                    status = "SIMILAR"
                     speedup_str = f"{speedup:.2f}x"
                 else:
-                    status = "🐌 較慢"
+                    status = "SLOWER"
                     speedup_str = f"{speedup:.2f}x"
                 
                 print(f"{size:<10} {numpy_time:<12.3f} {numba_time:<12.3f} {speedup_str:<10} {status}")
         
         # 計算整體統計
-        print(f"\n📊 整體性能統計")
+        print(f"\nOverall Performance Statistics")
         print("=" * 40)
         
         all_speedups = []
@@ -374,7 +374,7 @@ class NumbaPerformanceBenchmark:
             
             print(f"改善率: {improvement_rate:.1f}% ({improved_count}/{total_count})")
         
-        print("\n✅ 基準測試完成")
+        print("\nBenchmark testing completed")
 
 
 def run_benchmark():

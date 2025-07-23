@@ -18,6 +18,17 @@ This file provides essential guidance to Claude Code (claude.ai/code) when worki
 > **Before starting ANY task, Claude Code must respond with:**  
 > "✅ CRITICAL RULES ACKNOWLEDGED - I will follow all prohibitions and requirements listed in CLAUDE.md"
 
+## 🚫 NO EMOJI POLICY
+
+- Emoji and non-ASCII decorative symbols are **STRICTLY FORBIDDEN** in all:
+    - Documentation
+    - Code comments
+    - Commit messages
+    - Markdown files
+- Use plain text, standard ASCII markers and bullets only.
+- If any section contains emoji or non-ASCII, replace with textual equivalents.
+
+
 ### ❌ ABSOLUTE PROHIBITIONS
 - **NEVER** create new files in root directory → use proper module structure
 - **NEVER** write output files directly to root directory → use designated output folders

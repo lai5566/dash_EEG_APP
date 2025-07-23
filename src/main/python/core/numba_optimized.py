@@ -18,11 +18,11 @@ try:
     from numba import jit, prange
     NUMBA_AVAILABLE = True
     logger = logging.getLogger(__name__)
-    logger.info("✅ Numba successfully imported - JIT compilation enabled")
+    logger.info("Numba successfully imported - JIT compilation enabled")
 except ImportError:
     NUMBA_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning("⚠️ Numba not available - falling back to NumPy implementations")
+    logger.warning("WARNING: Numba not available - falling back to NumPy implementations")
     
     # 如果Numba不可用，創建一個no-op裝飾器
     def jit(*args, **kwargs):
@@ -305,7 +305,7 @@ else:
     # 在導入時記錄狀態
     perf_result = check_numba_performance()
     if perf_result['available']:
-        logger.info("🚀 Numba optimization module loaded successfully")
-        logger.info(f"🎯 Performance test completed: {perf_result['message']}")
+        logger.info("Numba optimization module loaded successfully")
+        logger.info(f"Performance test completed: {perf_result['message']}")
     else:
-        logger.warning(f"⚠️ Numba issues detected: {perf_result.get('message', 'Unknown error')}")
+        logger.warning(f"WARNING: Numba issues detected: {perf_result.get('message', 'Unknown error')}")

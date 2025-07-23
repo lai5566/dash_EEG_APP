@@ -21,7 +21,7 @@ if src_path not in sys.path:
 
 def main():
     """執行Numba優化測試"""
-    print("🚀 EEG系統Numba優化測試")
+    print("EEG System Numba Optimization Testing")
     print("=" * 50)
     print(f"專案根目錄: {project_root}")
     print(f"測試目錄: {test_path}")
@@ -32,7 +32,7 @@ def main():
         from test.test_numba_optimization import main as run_tests
         run_tests()
     except ImportError as e:
-        print(f"❌ 無法導入測試模組: {e}")
+        print(f"ERROR: Unable to import test module: {e}")
         print()
         print("請確保:")
         print("1. 專案結構正確")
@@ -40,7 +40,7 @@ def main():
         print("3. 在專案根目錄中運行此腳本")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ 測試執行失敗: {e}")
+        print(f"ERROR: Test execution failed: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

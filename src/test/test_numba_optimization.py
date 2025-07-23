@@ -30,26 +30,26 @@ try:
     from core.numba_benchmark import run_benchmark
     from core.eeg_processor import EEGProcessor
     from core.filter_processor import OptimizedFilterProcessor
-    print("✅ 成功導入所有優化模組")
+    print("SUCCESS: Successfully imported all optimization modules")
 except ImportError as e:
-    print(f"❌ 導入錯誤: {e}")
+    print(f"ERROR: Import error: {e}")
     print("請確保已安裝所有必要的依賴套件")
     sys.exit(1)
 
 
 def test_numba_installation():
     """測試Numba安裝和基本功能"""
-    print("\n🔍 檢查Numba安裝狀態...")
+    print("\nChecking Numba installation status...")
     print("=" * 50)
     
     # 檢查Numba性能
     result = check_numba_performance()
     
-    print(f"Numba可用性: {'✅ 是' if result['available'] else '❌ 否'}")
-    print(f"狀態訊息: {result['message']}")
+    print(f"Numba availability: {'Available' if result['available'] else 'Not Available'}")
+    print(f"Status message: {result['message']}")
     
     if result['available'] and 'test_results' in result:
-        print("\n📊 基本功能測試結果:")
+        print("\nBasic function test results:")
         for key, value in result['test_results'].items():
             print(f"  {key}: {value:.4f}")
     
@@ -58,7 +58,7 @@ def test_numba_installation():
 
 def test_eeg_processor_integration():
     """測試EEG處理器的Numba整合"""
-    print("\n🧠 測試EEG處理器Numba整合...")
+    print("\nTesting EEG processor Numba integration...")
     print("=" * 50)
     
     # 創建測試數據
@@ -83,34 +83,34 @@ def test_eeg_processor_integration():
     try:
         # 測試功率譜計算
         freqs, psd = processor.compute_power_spectrum(signal)
-        print(f"✅ 功率譜計算成功 - 頻率點數: {len(freqs)}")
+        print(f"SUCCESS: Power spectrum calculation - frequency points: {len(freqs)}")
         
         # 測試頻帶功率提取
         band_powers = processor.extract_band_powers(signal)
-        print("✅ 頻帶功率提取成功:")
+        print("SUCCESS: Band power extraction:")
         for band, power in band_powers.items():
             print(f"  {band}: {power:.6f}")
         
         # 測試頻譜特徵計算
         spectral_features = processor.calculate_spectral_features(signal)
-        print("✅ 頻譜特徵計算成功:")
+        print("SUCCESS: Spectral features calculation:")
         for feature, value in spectral_features.items():
             print(f"  {feature}: {value:.4f}")
         
         # 測試信號品質計算  
         quality = processor._calculate_signal_quality(signal)
-        print(f"✅ 信號品質計算成功: {quality:.2f}")
+        print(f"SUCCESS: Signal quality calculation: {quality:.2f}")
         
         return True
         
     except Exception as e:
-        print(f"❌ EEG處理器測試失敗: {e}")
+        print(f"ERROR: EEG processor test failed: {e}")
         return False
 
 
 def test_filter_processor_integration():
     """測試濾波器處理器的Numba整合"""
-    print("\n🔧 測試濾波器處理器Numba整合...")
+    print("\nTesting filter processor Numba integration...")
     print("=" * 50)
     
     # 創建測試數據
@@ -124,26 +124,26 @@ def test_filter_processor_integration():
     try:
         # 測試頻帶功率計算
         band_powers = filter_processor.compute_band_powers(signal)
-        print("✅ 濾波器頻帶功率計算成功:")
+        print("SUCCESS: Filter band power calculation:")
         for band, power in band_powers.items():
             print(f"  {band}: {power:.6f}")
         
         # 測試相對功率計算
         relative_powers = filter_processor.compute_relative_powers(signal)
-        print("✅ 相對功率計算成功:")
+        print("SUCCESS: Relative power calculation:")
         for band, power in relative_powers.items():
             print(f"  {band}: {power:.4f}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 濾波器處理器測試失敗: {e}")
+        print(f"ERROR: Filter processor test failed: {e}")
         return False
 
 
 def run_performance_benchmark():
     """運行性能基準測試"""
-    print("\n⚡ 運行性能基準測試...")
+    print("\nRunning performance benchmark tests...")
     print("=" * 50)
     print("這可能需要幾分鐘時間，請稍候...")
     
@@ -151,13 +151,13 @@ def run_performance_benchmark():
         results = run_benchmark()
         return True
     except Exception as e:
-        print(f"❌ 基準測試失敗: {e}")
+        print(f"ERROR: Benchmark test failed: {e}")
         return False
 
 
 def main():
     """主測試函數"""
-    print("🚀 EEG系統Numba優化測試")
+    print("EEG System Numba Optimization Testing")
     print("=" * 80)
     
     # 測試步驟
@@ -175,39 +175,39 @@ def main():
         try:
             results[test_name] = test_func()
         except Exception as e:
-            print(f"❌ 測試 '{test_name}' 發生異常: {e}")
+            print(f"ERROR: Test '{test_name}' encountered exception: {e}")
             results[test_name] = False
     
     # 輸出總結
-    print("\n📊 測試結果總結")
+    print("\nTest Results Summary")
     print("=" * 50)
     
     passed = 0
     total = len(tests)
     
     for test_name, result in results.items():
-        status = "✅ 通過" if result else "❌ 失敗"
+        status = "PASSED" if result else "FAILED"
         print(f"{test_name:<25} {status}")
         if result:
             passed += 1
     
-    print(f"\n總體結果: {passed}/{total} 測試通過")
+    print(f"\nOverall results: {passed}/{total} tests passed")
     
     if passed == total:
-        print("🎉 所有測試通過！Numba優化已成功整合到EEG系統")
-        print("\n🚀 性能提升預期:")
-        print("  • FFT相關運算: 3-5x 加速")
-        print("  • 統計計算: 2-4x 加速")
-        print("  • 實時處理延遲: 從500ms降至100-150ms")
-        print("  • 樹莓派兼容性: 顯著改善")
+        print("SUCCESS: All tests passed! Numba optimization successfully integrated into EEG system")
+        print("\nExpected performance improvements:")
+        print("  • FFT related operations: 3-5x acceleration")
+        print("  • Statistical calculations: 2-4x acceleration")
+        print("  • Real-time processing latency: from 500ms to 100-150ms")
+        print("  • Raspberry Pi compatibility: significantly improved")
     else:
-        print("⚠️ 部分測試失敗，請檢查相關錯誤訊息")
+        print("WARNING: Some tests failed, please check error messages")
         
         if not NUMBA_AVAILABLE:
-            print("\n💡 建議:")
-            print("1. 安裝Numba: pip install numba")
-            print("2. 檢查Python版本 (需要3.7+)")
-            print("3. 重新運行測試")
+            print("\nSuggestions:")
+            print("1. Install Numba: pip install numba")
+            print("2. Check Python version (requires 3.7+)")
+            print("3. Re-run tests")
 
 
 if __name__ == "__main__":

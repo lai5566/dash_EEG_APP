@@ -15,12 +15,12 @@ try:
     )
     USE_NUMBA = True
     logger = logging.getLogger(__name__)
-    logger.info("🚀 Numba optimizations loaded for filter processing")
+    logger.info("Numba optimizations loaded for filter processing")
 except ImportError as e:
     USE_NUMBA = False
     NUMBA_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning(f"⚠️ Numba optimizations not available: {e}")
+    logger.warning(f"WARNING: Numba optimizations not available: {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ class OptimizedFilterProcessor:
                     logger.warning(f"Failed to create filter for {name}: {e}")
                     continue
                     
-            logger.info(f"🍓 已建立優化濾波器: {len(self.sos_filters)} 個頻率帶")
+            logger.info(f"已建立優化濾波器: {len(self.sos_filters)} 個頻率帶")
             
         except Exception as e:
             logger.error(f"預計算濾波器錯誤: {e}")
