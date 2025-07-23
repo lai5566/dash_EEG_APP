@@ -49,14 +49,14 @@ class AudioRecorder:
     def list_audio_devices(self) -> Optional[int]:
         """列出可用的音頻裝置並自動檢測最佳裝置"""
         if not AUDIO_AVAILABLE:
-            logger.warning("⚠️ Audio modules not installed")
+            logger.warning("Audio modules not installed")
             logger.info("Please install audio modules: pip install sounddevice scipy")
             return None
             
         try:
-            logger.info("🔍 Querying audio devices...")
+            logger.info("Querying audio devices...")
             devices = sd.query_devices()
-            logger.info("🎙️ Available audio devices:")
+            logger.info("Available audio devices:")
             logger.info("-" * 80)
             
             pd100x_device = None
@@ -80,7 +80,7 @@ class AudioRecorder:
                      dev['hostapi'] == 0)
                 ])
                 
-                pd100x_marker = " 🎯 PD100X!" if is_pd100x and dev['max_input_channels'] > 0 else ""
+                pd100x_marker = "PD100X!" if is_pd100x and dev['max_input_channels'] > 0 else ""
                 
                 logger.info(f"  {status} {i}: {dev['name']}{default_marker}{pd100x_marker}")
                 logger.info(f"      Input channels: {dev['max_input_channels']}, "
@@ -90,14 +90,14 @@ class AudioRecorder:
                 
                 if is_pd100x and dev['max_input_channels'] > 0:
                     pd100x_device = i
-                    logger.info(f"🎯 PD100X device detected: Index {i} - {dev['name']}")
+                    logger.info(f"PD100X device detected: Index {i} - {dev['name']}")
                     logger.info(f"   Sample rate: {dev['default_samplerate']}Hz, "
                                f"Input channels: {dev['max_input_channels']}")
                 elif dev['max_input_channels'] > 0 and recommended_device is None:
                     recommended_device = i
-                    logger.info(f"💡 Alternative input device: Index {i} - {dev['name']}")
+                    logger.info(f"Alternative input device: Index {i} - {dev['name']}")
                     
-            logger.info(f"📊 Total devices found: {len(devices)}")
+            logger.info(f"Total devices found: {len(devices)}")
             
             # 自動選擇最佳裝置
             if pd100x_device is not None:
@@ -107,19 +107,19 @@ class AudioRecorder:
                 self.sample_rate = device_sample_rate
                 self.channels = 1  # PD100X是單聲道
                 logger.info(f"✅ Auto-selected PD100X device: Index {pd100x_device}")
-                logger.info(f"📝 Updated settings: Sample rate={self.sample_rate}Hz, "
+                logger.info(f"Updated settings: Sample rate={self.sample_rate}Hz, "
                            f"Channels={self.channels}")
                 return pd100x_device
             elif recommended_device is not None:
-                logger.info(f"💡 Recommended device index: {recommended_device}")
+                logger.info(f"Recommended device index: {recommended_device}")
                 self.device_index = recommended_device
                 return recommended_device
             else:
-                logger.warning("⚠️ No suitable input device found")
+                logger.warning("No suitable input device found")
                 return None
                 
         except Exception as e:
-            logger.error(f"❌ Failed to list audio devices: {e}")
+            logger.error(f"Failed to list audio devices: {e}")
             return None
             
     def _test_device(self) -> bool:
@@ -128,19 +128,19 @@ class AudioRecorder:
             return False
             
         try:
-            logger.info(f"🧪 Testing audio device {self.device_index}...")
+            logger.info(f"Testing audio device {self.device_index}...")
             
             # 檢查裝置訊息
             devices = sd.query_devices()
             if self.device_index >= len(devices):
-                logger.error(f"❌ Device index {self.device_index} out of range")
+                logger.error(f"Device index {self.device_index} out of range")
                 return False
                 
             device_info = devices[self.device_index]
-            logger.info(f"📱 Using device: {device_info['name']}")
+            logger.info(f"Using device: {device_info['name']}")
             
             if device_info['max_input_channels'] < self.channels:
-                logger.error(f"❌ Device doesn't support {self.channels} channels")
+                logger.error(f"Device doesn't support {self.channels} channels")
                 return False
                 
             # 測試錄製
@@ -164,11 +164,11 @@ class AudioRecorder:
     def start_recording(self, group_id: Optional[str] = None) -> bool:
         """開始錄製音頻"""
         if not AUDIO_AVAILABLE:
-            logger.error("⚠️ Audio modules not installed, cannot record")
+            logger.error("Audio modules not installed, cannot record")
             return False
             
         if self.is_recording:
-            logger.warning("⚠️ Already recording")
+            logger.warning("Already recording")
             return False
             
         try:
@@ -178,7 +178,7 @@ class AudioRecorder:
                 
             # 測試裝置
             if not self._test_device():
-                logger.error("❌ Audio device test failed")
+                logger.error("Audio device test failed")
                 return False
                 
             # 初始化錄製
@@ -194,8 +194,8 @@ class AudioRecorder:
                 'start_time': self.start_time
             })
             
-            logger.info(f"🎙️ Starting recording with group ID: {group_id}")
-            logger.info(f"📝 Recording settings: {self.sample_rate}Hz, "
+            logger.info(f"Starting recording with group ID: {group_id}")
+            logger.info(f"Recording settings: {self.sample_rate}Hz, "
                        f"{self.channels} channels, device {self.device_index}")
             
             # 啟動錄製執行緒
@@ -222,9 +222,9 @@ class AudioRecorder:
                         
                     if self.is_recording:
                         sd.stop()
-                        logger.info("⏹️ Recording stopped (max duration reached)")
+                        logger.info("Recording stopped (max duration reached)")
                     else:
-                        logger.info("⏹️ Recording stopped manually")
+                        logger.info("Recording stopped manually")
                         
                     # 儲存錄製資料
                     actual_duration = time.time() - start_time
@@ -232,11 +232,11 @@ class AudioRecorder:
                     frames_to_save = min(actual_frames, len(recording))
                     
                     self.recording_data = recording[:frames_to_save]
-                    logger.info(f"💾 Recording data saved ({frames_to_save} frames, "
+                    logger.info(f"Recording data saved ({frames_to_save} frames, "
                                f"{actual_duration:.1f}s)")
                     
                 except Exception as e:
-                    logger.error(f"❌ Recording thread error: {e}")
+                    logger.error(f"Recording thread error: {e}")
                     
             self.recording_thread = threading.Thread(target=record_thread, daemon=True)
             self.recording_thread.start()
@@ -246,17 +246,17 @@ class AudioRecorder:
             return True
             
         except Exception as e:
-            logger.error(f"❌ Failed to start recording: {e}")
+            logger.error(f"Failed to start recording: {e}")
             return False
             
     def stop_recording(self, db_writer=None) -> Optional[str]:
         """停止錄製並儲存檔案"""
         if not self.is_recording:
-            logger.warning("⚠️ Not currently recording")
+            logger.warning("Not currently recording")
             return None
             
         try:
-            logger.info("🛑 Stopping recording...")
+            logger.info("Stopping recording...")
             
             # 停止錄製
             self.is_recording = False
@@ -264,16 +264,16 @@ class AudioRecorder:
             
             try:
                 sd.stop()
-                logger.info("✅ Audio stream stopped")
+                logger.info("Audio stream stopped")
             except Exception as e:
-                logger.warning(f"⚠️ Error stopping audio stream: {e}")
+                logger.warning(f"Error stopping audio stream: {e}")
                 
             # 等待錄製執行緒完成
             if self.recording_thread:
-                logger.info("⏳ Waiting for recording thread to finish...")
+                logger.info("Waiting for recording thread to finish...")
                 self.recording_thread.join(timeout=5)
                 if self.recording_thread.is_alive():
-                    logger.warning("⚠️ Recording thread did not finish in time")
+                    logger.warning("Recording thread did not finish in time")
                 else:
                     logger.info("✅ Recording thread finished")
                     
@@ -293,12 +293,12 @@ class AudioRecorder:
                 
                 # 儲存WAV檔案
                 wav.write(filename, self.sample_rate, self.recording_data)
-                logger.info(f"💾 WAV file saved: {filename}")
+                logger.info(f"WAV file saved: {filename}")
                 
                 # 驗證檔案
                 if os.path.exists(filename):
                     file_size = os.path.getsize(filename)
-                    logger.info(f"✅ File verified: {filename} ({file_size} bytes)")
+                    logger.info(f"File verified: {filename} ({file_size} bytes)")
                     
                     # 如果提供則儲存到資料庫
                     if db_writer:
@@ -314,24 +314,24 @@ class AudioRecorder:
                                 self.sample_rate,
                                 file_size
                             )
-                            logger.info(f"📊 Database record added (duration: {duration:.1f}s)")
+                            logger.info(f"Database record added (duration: {duration:.1f}s)")
                             
                         except Exception as e:
-                            logger.error(f"⚠️ Database recording failed: {e}")
+                            logger.error(f"Database recording failed: {e}")
                             
                     # 清理狀態
                     self._cleanup_recording_state()
                     
-                    logger.info(f"🎉 Recording completed: {filename}")
+                    logger.info(f"Recording completed: {filename}")
                     return filename
                 else:
-                    logger.error(f"❌ File not created: {filename}")
+                    logger.error(f"File not created: {filename}")
                     
             else:
-                logger.error("❌ No recording data to save")
+                logger.error("No recording data to save")
                 
         except Exception as e:
-            logger.error(f"❌ Error stopping recording: {e}")
+            logger.error(f"Error stopping recording: {e}")
             
         # 即使失敗也要清理狀態
         self._cleanup_recording_state()

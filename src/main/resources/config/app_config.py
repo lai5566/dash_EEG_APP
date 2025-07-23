@@ -90,7 +90,7 @@ PLATFORM_CONFIG = {
 }
 
 # 全域狀態
-USE_MOCK_DATA = False  # 暫時啟用以測試ASIC功能
+USE_MOCK_DATA = True  # 暫時啟用以測試ASIC功能
 RECORDING_STATE = {
     'is_recording': False,
     'current_group_id': None,
@@ -135,14 +135,14 @@ def apply_platform_optimizations():
         UI_CONFIG['chart_height'] = optimizations['chart_height']
         UI_CONFIG['max_points'] = optimizations['max_points']
         
-        print(f"✅ 已應用樹莓派優化設定:")
+        print(f"已應用樹莓派優化設定:")
         print(f"   - 緩衝區大小: {optimizations['buffer_size']}")
         print(f"   - 窗口大小: {optimizations['window_size']}")
         print(f"   - 更新間隔: {optimizations['update_interval']}ms")
         print(f"   - 圖表高度: {optimizations['chart_height']}")
         print(f"   - 最大顯示點: {optimizations['max_points']}")
     else:
-        print("💻 檢測到標準平台，使用默認設定")
+        print("檢測到標準平台，使用默認設定")
 
 # 自動應用平台優化
 apply_platform_optimizations()

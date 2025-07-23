@@ -76,16 +76,16 @@ class EEGApplication:
                 )
                 
                 if session_id:
-                    logger.info(f"🚀 Auto-created default session: {session_id}")
-                    logger.info("✅ Data will now flow to unified_records automatically")
+                    logger.info(f"Auto-created default session: {session_id}")
+                    logger.info("Data will now flow to unified_records automatically")
                 else:
-                    logger.error("❌ Failed to create default session - data loss may occur")
+                    logger.error("Failed to create default session - data loss may occur")
             else:
-                logger.info(f"📊 Existing session found: {self.db_writer.current_session_id}")
+                logger.info(f"Existing session found: {self.db_writer.current_session_id}")
                 
         except Exception as e:
-            logger.error(f"❌ Error creating default session: {e}")
-            logger.warning("⚠️ Application will continue but data may not reach unified_records")
+            logger.error(f"Error creating default session: {e}")
+            logger.warning("Application will continue but data may not reach unified_records")
         
     def initialize(self):
         """初始化應用程式組件"""

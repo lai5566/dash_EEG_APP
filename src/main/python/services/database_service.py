@@ -928,6 +928,128 @@ class EnhancedDatabaseWriter:
 
         conn.close()
 
+    def get_session_history(self, limit: int = 50, subject_filter: str = None, 
+                           start_date: str = None, end_date: str = None) -> List[Dict]:
+        """獲取實驗會話歷史清單"""
+        try:
+            conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            cur = conn.cursor()
+            
+            # 構建查詢條件
+            where_clauses = []
+            params = []
+            
+            if subject_filter:
+                where_clauses.append("subject_id LIKE ?")
+                params.append(f"%{subject_filter}%")
+            
+            if start_date:
+                where_clauses.append("start_time_local >= ?")
+                params.append(start_date)
+                
+            if end_date:
+                where_clauses.append("start_time_local <= ?")
+                params.append(end_date)
+            
+            where_clause = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+            
+            query = f"""
+                SELECT session_id, subject_id, start_time_local, end_time_local, 
+                       duration, eye_state, researcher_name, notes,
+                       CASE WHEN end_time IS NULL THEN '進行中' ELSE '已完成' END as status
+                FROM experiment_sessions
+                {where_clause}
+                ORDER BY start_time DESC
+                LIMIT ?
+            """
+            params.append(limit)
+            
+            cur.execute(query, params)
+            rows = cur.fetchall()
+            
+            sessions = []
+            for row in rows:
+                sessions.append({
+                    'session_id': row[0],
+                    'subject_id': row[1],
+                    'start_time': row[2],
+                    'end_time': row[3],
+                    'duration': row[4],
+                    'eye_state': row[5],
+                    'researcher_name': row[6],
+                    'notes': row[7],
+                    'status': row[8]
+                })
+            
+            conn.close()
+            return sessions
+            
+        except Exception as e:
+            logger.error(f"Error getting session history: {e}")
+            return []
+
+    def get_session_data_for_export(self, session_id: str) -> Dict:
+        """獲取指定會話的所有數據用於CSV匯出"""
+        try:
+            conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            cur = conn.cursor()
+            
+            # 獲取會話基本信息
+            cur.execute("""
+                SELECT session_id, subject_id, start_time_local, end_time_local, 
+                       duration, eye_state, researcher_name, notes
+                FROM experiment_sessions 
+                WHERE session_id = ?
+            """, (session_id,))
+            session_info = cur.fetchone()
+            
+            if not session_info:
+                conn.close()
+                return None
+            
+            # 獲取統一記錄數據（包含所有感測器數據）
+            cur.execute("""
+                SELECT timestamp_local, attention, meditation, signal_quality,
+                       temperature, humidity, light, blink_intensity,
+                       voltage_data, delta_power, theta_power, low_alpha_power,
+                       high_alpha_power, low_beta_power, high_beta_power, 
+                       low_gamma_power, mid_gamma_power
+                FROM unified_records 
+                WHERE session_id = ?
+                ORDER BY timestamp
+            """, (session_id,))
+            unified_data = cur.fetchall()
+            
+            # 獲取眨眼事件
+            cur.execute("""
+                SELECT timestamp_local, intensity
+                FROM blink_events 
+                WHERE session_id = ?
+                ORDER BY timestamp
+            """, (session_id,))
+            blink_data = cur.fetchall()
+            
+            conn.close()
+            
+            return {
+                'session_info': {
+                    'session_id': session_info[0],
+                    'subject_id': session_info[1],
+                    'start_time': session_info[2],
+                    'end_time': session_info[3],
+                    'duration': session_info[4],
+                    'eye_state': session_info[5],
+                    'researcher_name': session_info[6],
+                    'notes': session_info[7]
+                },
+                'unified_data': unified_data,
+                'blink_data': blink_data
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting session data for export: {e}")
+            return None
+
     def start(self):
         """啟動寫入執行緒"""
         thread = threading.Thread(target=self.writer_thread, daemon=True)
