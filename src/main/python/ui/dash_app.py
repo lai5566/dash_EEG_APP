@@ -47,10 +47,10 @@ class EEGDashboardApp:
 
         # 初始化Dash應用程式
         self.app = dash.Dash(__name__)
-        
+
         # 初始化管理頁面
         self.management_page = ManagementPage(self.db_writer)
-        
+
         # 初始化滑動面板
         self.sliding_panel = SlidingPanel(self.db_writer)
 
@@ -98,10 +98,10 @@ class EEGDashboardApp:
         # 設定版面配置和回呼函式
         self._setup_layout()
         self._setup_callbacks()
-        
+
         # 註冊管理頁面回調
         self.management_page.register_callbacks(self.app)
-        
+
         # 註冊滑動面板回調
         self.sliding_panel.register_callbacks(self.app)
 
@@ -148,313 +148,275 @@ class EEGDashboardApp:
             </body>
         </html>
         '''
-        
+
         self.app.layout = html.Div([
             # 滑動面板 (放在最前面以確保正確的z-index層級)
             self.sliding_panel.create_panel_layout(),
-            
+
             # 頁面路由組件
             dcc.Location(id="url", refresh=False),
             dcc.Store(id="page-store", data="dashboard"),
-            
+
             # 全局數據存儲（用於頁面間共享數據）
             dcc.Store(id="global-subjects-store", data=[]),
             dcc.Store(id="global-sounds-store", data=[]),
-            
+
             # 主容器
             html.Div([
                 # 標題
                 html.H1(UI_CONFIG['title'],
                         style={'textAlign': 'center', 'marginBottom': '20px', 'color': '#333'}),
-                
-                # # 導航卡片區域
-                # html.Div([
-                #     html.Div([
-                #         # 管理中心卡片
-                #         html.Div([
-                #             html.Div([
-                #                 html.H4("📊 管理中心",
-                #                         style={'fontSize': '18px', 'fontWeight': 'bold',
-                #                                'marginBottom': '10px', 'color': '#fff',
-                #                                'textAlign': 'center'}),
-                #                 html.P("受試者註冊\n音效上傳",
-                #                       style={'fontSize': '14px', 'color': '#fff',
-                #                             'textAlign': 'center', 'margin': '0',
-                #                             'whiteSpace': 'pre-line'})
-                #             ], style={'padding': '20px', 'cursor': 'pointer',
-                #                      'transition': 'all 0.3s ease'}),
-                #         ], id="management-card", className="nav-card",
-                #            style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                #                   'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
-                #                   'marginBottom': '15px', 'cursor': 'pointer',
-                #                   'transform': 'scale(1)', 'transition': 'all 0.3s ease',
-                #                   'flex': '1', 'marginRight': '10px'}),
-                #
-                #         # EEG 實驗卡片
-                #         html.Div([
-                #             html.Div([
-                #                 html.H4("📈 即時EEG",
-                #                         style={'fontSize': '18px', 'fontWeight': 'bold',
-                #                                'marginBottom': '10px', 'color': '#fff',
-                #                                'textAlign': 'center'}),
-                #                 html.P("實驗控制\n數據監控",
-                #                       style={'fontSize': '14px', 'color': '#fff',
-                #                             'textAlign': 'center', 'margin': '0',
-                #                             'whiteSpace': 'pre-line'})
-                #             ], style={'padding': '20px', 'cursor': 'pointer',
-                #                      'transition': 'all 0.3s ease'}),
-                #         ], id="dashboard-card", className="nav-card active",
-                #            style={'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                #                   'borderRadius': '12px', 'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
-                #                   'marginBottom': '15px', 'cursor': 'pointer',
-                #                   'transform': 'scale(1.05)', 'transition': 'all 0.3s ease',
-                #                   'border': '2px solid #fff', 'flex': '1', 'marginLeft': '10px'}),
-                #
-                #     ], style={'display': 'flex', 'marginBottom': '20px', 'padding': '0 20px'}),
-                # ]),
-                
+
                 # 主要內容容器
                 html.Div(id="page-content")
             ], style={'maxWidth': '1200px', 'margin': '0 auto', 'padding': '10px'}),
         ])
-    
+
     def _create_dashboard_layout(self):
         """創建儀表板頁面佈局"""
         return html.Div([
 
-                # 第一行：FFT頻帶分析
+            # 第一行：FFT頻帶分析
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.H3("FFT Band Analysis",
+                                style={'fontSize': '18px', 'fontWeight': 'bold',
+                                       'marginBottom': '10px', 'color': '#555'}),
+                        dcc.Graph(id="fft-bands-main",
+                                  style={'height': f'{UI_CONFIG["chart_height"]}px'},
+                                  config={'displayModeBar': False}),
+                    ], style={'background': 'white', 'borderRadius': '8px',
+                              'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                              'padding': '15px', 'marginBottom': '15px'}),
+                ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
+            ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
+
+            # 第二行：認知指標
+            html.Div([
+                # 左側：趨勢圖表
+                html.Div([
+                    html.Div([
+                        html.H3("Cognitive Indicator Trends",
+                                style={'fontSize': '18px', 'fontWeight': 'bold',
+                                       'marginBottom': '10px', 'color': '#555'}),
+                        dcc.Graph(id="cognitive-trends", style={'height': '250px'},
+                                  config={'displayModeBar': False}),
+                    ], style={'background': 'white', 'borderRadius': '8px',
+                              'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                              'padding': '15px', 'marginBottom': '15px'}),
+                ], style={'flex': '2', 'padding': '5px', 'minWidth': '300px'}),
+
+                # 右側：儀表
+                html.Div([
+                    html.Div([
+                        html.H3("Real-time data",
+                                style={'fontSize': '18px', 'fontWeight': 'bold',
+                                       'marginBottom': '10px', 'color': '#555'}),
+                        html.Div([
+                            dcc.Graph(id="attention-gauge", style={'height': '120px'},
+                                      config={'displayModeBar': False}),
+                            dcc.Graph(id="meditation-gauge", style={'height': '120px'},
+                                      config={'displayModeBar': False}),
+                        ]),
+                    ], style={'background': 'white', 'borderRadius': '8px',
+                              'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                              'padding': '15px', 'marginBottom': '15px'}),
+                ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
+            ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
+
+            # 第三行：眨眼檢測
+            html.Div([
+                # 左側：事件時間軸
+                html.Div([
+                    html.Div([
+                        html.H3("Blink Event Timeline",
+                                style={'fontSize': '18px', 'fontWeight': 'bold',
+                                       'marginBottom': '10px', 'color': '#555'}),
+                        dcc.Graph(id="blink-timeline", style={'height': '200px'},
+                                  config={'displayModeBar': False}),
+                    ], style={'background': 'white', 'borderRadius': '8px',
+                              'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                              'padding': '15px', 'marginBottom': '15px'}),
+                ], style={'flex': '2', 'padding': '5px', 'minWidth': '300px'}),
+
+                # 右側：眨眼計數
+                html.Div([
+                    html.Div([
+                        html.H3("Blink Count",
+                                style={'fontSize': '18px', 'fontWeight': 'bold',
+                                       'marginBottom': '10px', 'color': '#555'}),
+                        dcc.Graph(id="blink-count-chart", style={'height': '200px'},
+                                  config={'displayModeBar': False}),
+                    ], style={'background': 'white', 'borderRadius': '8px',
+                              'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                              'padding': '15px', 'marginBottom': '15px'}),
+                ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
+            ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
+
+            # 第四行：ASIC頻帶
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.H3("ASIC Band Analysis",
+                                style={'fontSize': '18px', 'fontWeight': 'bold',
+                                       'marginBottom': '10px', 'color': '#555'}),
+                        dcc.Graph(id="asic-bands-chart", style={'height': '300px'},
+                                  config={'displayModeBar': False}),
+                    ], style={'background': 'white', 'borderRadius': '8px',
+                              'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                              'padding': '15px', 'marginBottom': '15px'}),
+                ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
+            ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
+
+            # 第五行：實驗控制和感測器資料
+            html.Div([
+                # 左側：實驗控制面板
                 html.Div([
                     html.Div([
                         html.Div([
-                            html.H3("FFT頻帶分析",
+                            html.H3("Experimental Control",
                                     style={'fontSize': '18px', 'fontWeight': 'bold',
                                            'marginBottom': '10px', 'color': '#555'}),
-                            dcc.Graph(id="fft-bands-main",
-                                      style={'height': f'{UI_CONFIG["chart_height"]}px'},
-                                      config={'displayModeBar': False}),
-                        ], style={'background': 'white', 'borderRadius': '8px',
-                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                  'padding': '15px', 'marginBottom': '15px'}),
-                    ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
-                ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
-                # 第二行：認知指標
-                html.Div([
-                    # 左側：趨勢圖表
-                    html.Div([
-                        html.Div([
-                            html.H3("認知指標趨勢",
-                                    style={'fontSize': '18px', 'fontWeight': 'bold',
-                                           'marginBottom': '10px', 'color': '#555'}),
-                            dcc.Graph(id="cognitive-trends", style={'height': '250px'},
-                                      config={'displayModeBar': False}),
-                        ], style={'background': 'white', 'borderRadius': '8px',
-                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                  'padding': '15px', 'marginBottom': '15px'}),
-                    ], style={'flex': '2', 'padding': '5px', 'minWidth': '300px'}),
-
-                    # 右側：儀表
-                    html.Div([
-                        html.Div([
-                            html.H3("即時數值",
-                                    style={'fontSize': '18px', 'fontWeight': 'bold',
-                                           'marginBottom': '10px', 'color': '#555'}),
+                            # 快速測試會話按鈕
                             html.Div([
-                                dcc.Graph(id="attention-gauge", style={'height': '120px'},
-                                          config={'displayModeBar': False}),
-                                dcc.Graph(id="meditation-gauge", style={'height': '120px'},
-                                          config={'displayModeBar': False}),
+                                html.Button("⚡ 快速測試會話", id="quick-test-session-btn",
+                                            style={'width': '100%', 'padding': '12px 20px',
+                                                   'fontSize': '16px', 'fontWeight': 'bold',
+                                                   'backgroundColor': '#17a2b8', 'color': 'white',
+                                                   'border': 'none', 'borderRadius': '6px',
+                                                   'cursor': 'pointer', 'marginBottom': '15px',
+                                                   'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
+                                html.Hr(style={'margin': '15px 0', 'borderColor': '#dee2e6'}),
+                                html.P("或設置完整實驗參數：",
+                                       style={'fontSize': '14px', 'color': '#6c757d', 'marginBottom': '10px',
+                                              'textAlign': 'center'})
                             ]),
-                        ], style={'background': 'white', 'borderRadius': '8px',
-                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                  'padding': '15px', 'marginBottom': '15px'}),
-                    ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
-                ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
-                # 第三行：眨眼檢測
-                html.Div([
-                    # 左側：事件時間軸
-                    html.Div([
-                        html.Div([
-                            html.H3("眨眼事件時間軸",
-                                    style={'fontSize': '18px', 'fontWeight': 'bold',
-                                           'marginBottom': '10px', 'color': '#555'}),
-                            dcc.Graph(id="blink-timeline", style={'height': '200px'},
-                                      config={'displayModeBar': False}),
-                        ], style={'background': 'white', 'borderRadius': '8px',
-                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                  'padding': '15px', 'marginBottom': '15px'}),
-                    ], style={'flex': '2', 'padding': '5px', 'minWidth': '300px'}),
-
-                    # 右側：眨眼計數
-                    html.Div([
-                        html.Div([
-                            html.H3("眨眼計數",
-                                    style={'fontSize': '18px', 'fontWeight': 'bold',
-                                           'marginBottom': '10px', 'color': '#555'}),
-                            dcc.Graph(id="blink-count-chart", style={'height': '200px'},
-                                      config={'displayModeBar': False}),
-                        ], style={'background': 'white', 'borderRadius': '8px',
-                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                  'padding': '15px', 'marginBottom': '15px'}),
-                    ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
-                ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
-
-                # 第四行：ASIC頻帶
-                html.Div([
-                    html.Div([
-                        html.Div([
-                            html.H3("ASIC頻帶分析",
-                                    style={'fontSize': '18px', 'fontWeight': 'bold',
-                                           'marginBottom': '10px', 'color': '#555'}),
-                            dcc.Graph(id="asic-bands-chart", style={'height': '300px'},
-                                      config={'displayModeBar': False}),
-                        ], style={'background': 'white', 'borderRadius': '8px',
-                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                  'padding': '15px', 'marginBottom': '15px'}),
-                    ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
-                ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
-
-                # 第五行：實驗控制和感測器資料
-                html.Div([
-                    # 左側：實驗控制面板
-                    html.Div([
-                        html.Div([
-                            html.Div([
-                                html.H3("實驗控制",
-                                        style={'fontSize': '18px', 'fontWeight': 'bold',
-                                               'marginBottom': '10px', 'color': '#555'}),
-                                
-                                # 快速測試會話按鈕
-                                html.Div([
-                                    html.Button("⚡ 快速測試會話", id="quick-test-session-btn",
-                                                style={'width': '100%', 'padding': '12px 20px',
-                                                       'fontSize': '16px', 'fontWeight': 'bold',
-                                                       'backgroundColor': '#17a2b8', 'color': 'white',
-                                                       'border': 'none', 'borderRadius': '6px',
-                                                       'cursor': 'pointer', 'marginBottom': '15px',
-                                                       'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
-                                    html.Hr(style={'margin': '15px 0', 'borderColor': '#dee2e6'}),
-                                    html.P("或設置完整實驗參數：", 
-                                           style={'fontSize': '14px', 'color': '#6c757d', 'marginBottom': '10px', 'textAlign': 'center'})
-                                ]),
-                            
                             # 受試者選擇
                             html.Div([
-                                html.Label("受試者ID:", style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px', 'display': 'block'}),
+                                html.Label("Subject ID:",
+                                           style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px',
+                                                  'display': 'block'}),
                                 dcc.Dropdown(
                                     id="subject-dropdown",
-                                    placeholder="選擇或輸入受試者ID",
+                                    placeholder="Select Subject ID",
                                     searchable=True,
                                     clearable=True,
                                     style={'marginBottom': '10px'}
                                 ),
                             ]),
-                            
+
                             # 環境音效選擇
                             html.Div([
-                                html.Label("環境音效:", style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px', 'display': 'block'}),
+                                html.Label("Ambient Sound:",
+                                           style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px',
+                                                  'display': 'block'}),
                                 dcc.Dropdown(
                                     id="ambient-sound-dropdown",
-                                    placeholder="選擇環境音效 (可選)",
+                                    placeholder="Ambient Sound",
                                     searchable=True,
                                     clearable=True,
                                     style={'marginBottom': '10px'}
                                 ),
                             ]),
-                            
+
                             # 眼睛狀態選擇
                             html.Div([
-                                html.Label("眼睛狀態:", style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px', 'display': 'block'}),
+                                html.Label("眼睛狀態:",
+                                           style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px',
+                                                  'display': 'block'}),
                                 dcc.Dropdown(
                                     id="eye-state-dropdown",
                                     options=[
-                                        {'label': '睜眼', 'value': 'open'},
-                                        {'label': '閉眼', 'value': 'closed'},
-                                        {'label': '混合', 'value': 'mixed'}
+                                        {'label': 'Open', 'value': 'open'},
+                                        {'label': 'Closed', 'value': 'closed'},
+                                        {'label': 'Mixed', 'value': 'mixed'}
                                     ],
                                     value='open',
                                     clearable=False,
                                     style={'marginBottom': '15px'}
                                 ),
                             ]),
-                            
+
                             # 控制按鈕
                             html.Div([
-                                html.Button("📊 開始記錄", id="start-experiment-btn",
-                                            style={'marginRight': '10px', 'marginBottom': '10px', 'padding': '10px 20px',
+                                html.Button("Start Recording", id="start-experiment-btn",
+                                            style={'marginRight': '10px', 'marginBottom': '10px',
+                                                   'padding': '10px 20px',
                                                    'fontSize': '14px', 'backgroundColor': '#007bff',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
                                                    'cursor': 'pointer', 'width': '48%'}),
-                                html.Button("🎙️ 開始錄音", id="start-recording-btn",
+                                html.Button("🎙️ Start Audio Recording", id="start-recording-btn",
                                             style={'marginBottom': '10px', 'padding': '10px 20px',
                                                    'fontSize': '14px', 'backgroundColor': '#28a745',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
                                                    'cursor': 'pointer', 'width': '48%', 'disabled': True}),
-                                html.Button("⏹️ 停止錄音", id="stop-recording-btn",
-                                            style={'marginRight': '10px', 'marginBottom': '10px', 'padding': '10px 20px',
+                                html.Button("⏹️ Stop Recording", id="stop-recording-btn",
+                                            style={'marginRight': '10px', 'marginBottom': '10px',
+                                                   'padding': '10px 20px',
                                                    'fontSize': '14px', 'backgroundColor': '#dc3545',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
                                                    'cursor': 'pointer', 'width': '48%', 'disabled': True}),
-                                html.Button("🛑 停止實驗", id="stop-experiment-btn",
+                                html.Button("🛑 Stop Experiment", id="stop-experiment-btn",
                                             style={'marginBottom': '10px', 'padding': '10px 20px',
                                                    'fontSize': '14px', 'backgroundColor': '#6c757d',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
                                                    'cursor': 'pointer', 'width': '48%', 'disabled': True}),
                             ], style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'space-between'}),
-                            
+
                             # 狀態顯示 - 突出顯示會話狀態
                             html.Div(id="experiment-status",
                                      style={'fontSize': '16px', 'fontWeight': 'bold', 'marginTop': '15px',
                                             'padding': '15px', 'backgroundColor': '#e3f2fd', 'borderRadius': '8px',
                                             'border': '2px solid #2196f3', 'textAlign': 'center',
                                             'boxShadow': '0 2px 8px rgba(33, 150, 243, 0.2)'}),
-                            ], style={'background': 'white', 'borderRadius': '8px',
-                                      'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                      'padding': '15px', 'marginBottom': '15px'}),
-                        ], id="experiment-controls", style={'display': 'block'}),
-                        
-                    ], style={'flex': '1', 'padding': '5px', 'minWidth': '350px'}),
+                        ], style={'background': 'white', 'borderRadius': '8px',
+                                  'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                                  'padding': '15px', 'marginBottom': '15px'}),
+                    ], id="experiment-controls", style={'display': 'block'}),
 
-                    # 右側：感測器數據
-                    html.Div([
-                        html.Div([
-                            html.H3([
-                                html.I(className="fas fa-thermometer-half", 
-                                      style={'marginRight': '10px', 'color': '#007bff'}),
-                                "環境感測器"
-                            ], style={'fontSize': '18px', 'fontWeight': 'bold',
-                                     'marginBottom': '20px', 'color': '#2c3e50',
-                                     'borderBottom': '2px solid #007bff', 'paddingBottom': '10px'}),
-                            html.Div(id="sensor-display",
-                                     style={'lineHeight': '1.6'}),
-                        ], className='sensor-card',
-                           style={'background': 'white', 'borderRadius': '12px',
-                                  'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
-                                  'padding': '20px', 'marginBottom': '15px'}),
-                    ], style={'flex': '2', 'padding': '5px', 'minWidth': '300px'}),
-                ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
+                ], style={'flex': '1', 'padding': '5px', 'minWidth': '350px'}),
 
-                # 狀態列
+                # 右側：感測器數據
                 html.Div([
-                    html.Div(id="performance-status",
-                             style={'fontSize': '12px', 'color': '#666',
-                                    'textAlign': 'center', 'padding': '10px',
-                                    'borderTop': '1px solid #eee'}),
-                ]),
+                    html.Div([
+                        html.H3([
+                            html.I(className="fas fa-thermometer-half",
+                                   style={'marginRight': '10px', 'color': '#007bff'}),
+                            "Environmental Sensor"
+                        ], style={'fontSize': '18px', 'fontWeight': 'bold',
+                                  'marginBottom': '20px', 'color': '#2c3e50',
+                                  'borderBottom': '2px solid #007bff', 'paddingBottom': '10px'}),
+                        html.Div(id="sensor-display",
+                                 style={'lineHeight': '1.6'}),
+                    ], className='sensor-card',
+                        style={'background': 'white', 'borderRadius': '12px',
+                               'boxShadow': '0 4px 8px rgba(0,0,0,0.1)',
+                               'padding': '20px', 'marginBottom': '15px'}),
+                ], style={'flex': '2', 'padding': '5px', 'minWidth': '300px'}),
+            ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
-                # 間隔組件
-                dcc.Interval(id="interval",
-                             interval=UI_CONFIG['update_interval'],
-                             n_intervals=0),
-                dcc.Store(id="performance-store", data={}),
+            # 狀態列
+            html.Div([
+                html.Div(id="performance-status",
+                         style={'fontSize': '12px', 'color': '#666',
+                                'textAlign': 'center', 'padding': '10px',
+                                'borderTop': '1px solid #eee'}),
+            ]),
 
-            ], style={'maxWidth': '1200px', 'margin': '0 auto', 'padding': '10px'}),
+            # 間隔組件
+            dcc.Interval(id="interval",
+                         interval=UI_CONFIG['update_interval'],
+                         n_intervals=0),
+            dcc.Store(id="performance-store", data={}),
 
+        ], style={'maxWidth': '1200px', 'margin': '0 auto', 'padding': '10px'}),
 
     def _setup_callbacks(self):
         """設定所有儀表板回呼函式"""
-        
+
         # 頁面路由回調（簡化版 - 只顯示儀表板）
         @self.app.callback(
             Output("page-content", "children"),
@@ -465,9 +427,9 @@ class EEGDashboardApp:
             """顯示主儀表板頁面"""
             # 現在只顯示儀表板，管理功能通過滑動面板提供
             return self._create_dashboard_layout()
-        
+
         # 頁面狀態管理已移除 - 現在只使用滑動面板進行管理
-        
+
         # 全局數據同步回調
         @self.app.callback(
             Output("global-subjects-store", "data"),
@@ -480,7 +442,7 @@ class EEGDashboardApp:
                 return subjects_data
             # 如果沒有數據，從資料庫獲取
             return self.db_writer.get_subjects()
-        
+
         @self.app.callback(
             Output("global-sounds-store", "data"),
             Input("sounds-store-mgmt", "data"),
@@ -492,7 +454,7 @@ class EEGDashboardApp:
                 return sounds_data
             # 如果沒有數據，從資料庫獲取
             return self.db_writer.get_ambient_sounds()
-        
+
         # 初始化全局數據存儲
         @self.app.callback(
             [Output("global-subjects-store", "data", allow_duplicate=True),
@@ -524,7 +486,7 @@ class EEGDashboardApp:
 
                 if not processed_result:
                     return go.Figure().add_annotation(
-                        text="EEG處理器錯誤<br>正在初始化...",
+                        text="EEG processor error<br>Initializing...",
                         showarrow=False, x=0.5, y=0.5,
                         xref="paper", yref="paper",
                         font=dict(size=16, color="red")
@@ -532,7 +494,7 @@ class EEGDashboardApp:
 
                 if 'fft_bands' not in processed_result:
                     return go.Figure().add_annotation(
-                        text="FFT頻段數據缺失<br>正在生成測試數據...",
+                        text="FFT frequency band data missing<br>Generating test data...",
                         showarrow=False, x=0.5, y=0.5,
                         xref="paper", yref="paper",
                         font=dict(size=16, color="orange")
@@ -543,7 +505,7 @@ class EEGDashboardApp:
                 # 驗證 FFT 頻段數據
                 if not fft_bands or all(len(band_data) == 0 for band_data in fft_bands.values()):
                     return go.Figure().add_annotation(
-                        text="FFT頻段為空<br>正在重新生成數據...",
+                        text="FFT frequency band is empty<br>Regenerating data...",
                         showarrow=False, x=0.5, y=0.5,
                         xref="paper", yref="paper",
                         font=dict(size=16, color="orange")
@@ -601,7 +563,7 @@ class EEGDashboardApp:
                                 )
 
                 fig.update_layout(
-                    title="FFT頻帶分析 (時域波形)",
+                    title="FFT Band Analysis (Time-Domain Waveform)",
                     height=UI_CONFIG['chart_height'],
                     margin=dict(l=40, r=15, t=40, b=60),
                     plot_bgcolor='white',
@@ -609,8 +571,8 @@ class EEGDashboardApp:
                 )
 
                 # 更新x軸標籤
-                fig.update_xaxes(title_text="時間 (秒)", row=len(band_names), col=1)
-                fig.update_yaxes(title_text="振幅")
+                fig.update_xaxes(title_text="Time(s)", row=len(band_names), col=1)
+                fig.update_yaxes(title_text="Amplitude")
 
                 # 更新效能監控器
                 render_time = time.time() - start_time
@@ -623,7 +585,7 @@ class EEGDashboardApp:
             except Exception as e:
                 logger.error(f"Error in update_fft_bands_main: {e}")
                 return go.Figure().add_annotation(
-                    text=f"頻帶分析錯誤: {str(e)}",
+                    text=f"Band analysis error: {str(e)}",
                     showarrow=False, x=0.5, y=0.5,
                     xref="paper", yref="paper"
                 )
@@ -662,8 +624,8 @@ class EEGDashboardApp:
                     )
                     return fig
 
-                attention_fig = create_gauge(attention, "注意力", "#1f77b4")
-                meditation_fig = create_gauge(meditation, "放鬆", "#2ca02c")
+                attention_fig = create_gauge(attention, "Attention", "#1f77b4")
+                meditation_fig = create_gauge(meditation, "Relaxation", "#2ca02c")
 
                 return attention_fig, meditation_fig
 
@@ -696,7 +658,7 @@ class EEGDashboardApp:
                         fig.add_trace(go.Scatter(
                             x=rel_times, y=values,
                             mode='lines',
-                            name='注意力',
+                            name='Attention',
                             line=dict(color='#1f77b4', width=2)
                         ))
 
@@ -710,13 +672,13 @@ class EEGDashboardApp:
                         fig.add_trace(go.Scatter(
                             x=rel_times, y=values,
                             mode='lines',
-                            name=';放鬆',
+                            name='Relaxation',
                             line=dict(color='#2ca02c', width=2)
                         ))
 
                 fig.update_layout(
-                    xaxis_title="時間 (秒)",
-                    yaxis_title="數值",
+                    xaxis_title="Time(s)",
+                    yaxis_title="Value",
                     yaxis_range=[0, 100],
                     height=250,
                     margin=dict(l=30, r=15, t=15, b=30),
@@ -751,12 +713,12 @@ class EEGDashboardApp:
                         x=rel_times, y=intensities,
                         mode='markers',
                         marker=dict(size=8, color='red', opacity=0.7),
-                        name='眨眼事件'
+                        name='Blink Event'
                     ))
 
                 fig.update_layout(
-                    xaxis_title="時間 (秒)",
-                    yaxis_title="強度",
+                    xaxis_title="Time(s)",
+                    yaxis_title="Intensity",
                     height=200,
                     margin=dict(l=30, r=15, t=15, b=30),
                     plot_bgcolor='white'
@@ -788,14 +750,14 @@ class EEGDashboardApp:
                     fig.add_trace(go.Scatter(
                         x=rel_times, y=counts,
                         mode='lines+markers',
-                        name='累計次數',
+                        name='Cumulative Count',
                         line=dict(color='#9467bd', width=2),
                         marker=dict(size=4)
                     ))
 
                 fig.update_layout(
-                    xaxis_title="時間 (秒)",
-                    yaxis_title="次數",
+                    xaxis_title="Time(s)",
+                    yaxis_title="Count",
                     height=200,
                     margin=dict(l=40, r=20, t=20, b=40),
                     plot_bgcolor='white'
@@ -824,7 +786,7 @@ class EEGDashboardApp:
                     # 沒有ASIC數據
                     print(f"[ASIC DEBUG] DashApp: No ASIC data - all bands are zero")
                     fig.add_annotation(
-                        text="沒收到ASIC數據<br><br>可能原因:<br>• ThinkGear設備未連接<br>• 串口設定錯誤<br>• 電極接觸不良",
+                        text="No ASIC data received<br><br>Possible Causes:<br>• ThinkGear device not connected<br>• Serial port setting error<br>• Poor electrode contact",
                         showarrow=False, x=0.5, y=0.5,
                         xref="paper", yref="paper",
                         font=dict(size=14, color="red"),
@@ -841,13 +803,13 @@ class EEGDashboardApp:
                                       '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'],
                         text=[f'{v}' if v > 0 else '0' for v in current_bands],
                         textposition='auto',
-                        name="ASIC頻帶功率"
+                        name="ASIC Band Power"
                     ))
 
                 fig.update_layout(
-                    title="ASIC EEG 8頻帶功率分布",
-                    xaxis_title="頻帶",
-                    yaxis_title="功率值",
+                    title="ASIC EEG 8 Band Power Distribution",
+                    xaxis_title="Band",
+                    yaxis_title="Power Value",
                     yaxis_range=[0, max(current_bands) * 1.1],
                     height=300,
                     margin=dict(l=30, r=15, t=30, b=30),
@@ -869,46 +831,46 @@ class EEGDashboardApp:
             """更新感測器顯示"""
             try:
                 sensor_data = self.data_buffer.get_sensor_data()
-                
+
                 # 創建更豐富的顯示格式
                 display_components = [
                     html.Div([
                         html.Div([
-                            html.I(className="fas fa-thermometer-half", 
-                                  style={'color': '#e74c3c', 'marginRight': '8px', 'fontSize': '16px'}),
-                            html.Span("溫度", style={'fontWeight': 'bold', 'color': '#2c3e50'}),
+                            html.I(className="fas fa-thermometer-half",
+                                   style={'color': '#e74c3c', 'marginRight': '8px', 'fontSize': '16px'}),
+                            html.Span("Temperature", style={'fontWeight': 'bold', 'color': '#2c3e50'}),
                         ], style={'marginBottom': '5px'}),
-                        html.Div(f"{sensor_data['temperature']:.1f}°C", 
-                                style={'fontSize': '18px', 'color': '#e74c3c', 'marginLeft': '24px'})
+                        html.Div(f"{sensor_data['temperature']:.1f}°C",
+                                 style={'fontSize': '18px', 'color': '#e74c3c', 'marginLeft': '24px'})
                     ], style={'marginBottom': '15px'}),
-                    
+
                     html.Div([
                         html.Div([
-                            html.I(className="fas fa-tint", 
-                                  style={'color': '#3498db', 'marginRight': '8px', 'fontSize': '16px'}),
-                            html.Span("濕度", style={'fontWeight': 'bold', 'color': '#2c3e50'}),
+                            html.I(className="fas fa-tint",
+                                   style={'color': '#3498db', 'marginRight': '8px', 'fontSize': '16px'}),
+                            html.Span("Humidity", style={'fontWeight': 'bold', 'color': '#2c3e50'}),
                         ], style={'marginBottom': '5px'}),
-                        html.Div(f"{sensor_data['humidity']:.1f}%", 
-                                style={'fontSize': '18px', 'color': '#3498db', 'marginLeft': '24px'})
+                        html.Div(f"{sensor_data['humidity']:.1f}%",
+                                 style={'fontSize': '18px', 'color': '#3498db', 'marginLeft': '24px'})
                     ], style={'marginBottom': '15px'}),
-                    
+
                     html.Div([
                         html.Div([
-                            html.I(className="fas fa-sun", 
-                                  style={'color': '#f39c12', 'marginRight': '8px', 'fontSize': '16px'}),
-                            html.Span("光線", style={'fontWeight': 'bold', 'color': '#2c3e50'}),
+                            html.I(className="fas fa-sun",
+                                   style={'color': '#f39c12', 'marginRight': '8px', 'fontSize': '16px'}),
+                            html.Span("Light", style={'fontWeight': 'bold', 'color': '#2c3e50'}),
                         ], style={'marginBottom': '5px'}),
-                        html.Div(f"{sensor_data['light']}", 
-                                style={'fontSize': '18px', 'color': '#f39c12', 'marginLeft': '24px'})
+                        html.Div(f"{sensor_data['light']}",
+                                 style={'fontSize': '18px', 'color': '#f39c12', 'marginLeft': '24px'})
                     ], style={'marginBottom': '15px'}),
-                    
+
                     html.Hr(style={'margin': '15px 0', 'border': '1px solid #ecf0f1'}),
-                    
+
                     html.Div([
-                        html.I(className="fas fa-clock", 
-                              style={'color': '#95a5a6', 'marginRight': '8px', 'fontSize': '14px'}),
-                        html.Span(f"更新時間: {datetime.now().strftime('%H:%M:%S')}", 
-                                 style={'fontSize': '12px', 'color': '#95a5a6'})
+                        html.I(className="fas fa-clock",
+                               style={'color': '#95a5a6', 'marginRight': '8px', 'fontSize': '14px'}),
+                        html.Span(f"Update: {datetime.now().strftime('%H:%M:%S')}",
+                                  style={'fontSize': '12px', 'color': '#95a5a6'})
                     ])
                 ]
 
@@ -916,8 +878,8 @@ class EEGDashboardApp:
 
             except Exception as e:
                 return html.Div([
-                    html.I(className="fas fa-exclamation-triangle", 
-                          style={'color': '#e74c3c', 'marginRight': '8px'}),
+                    html.I(className="fas fa-exclamation-triangle",
+                           style={'color': '#e74c3c', 'marginRight': '8px'}),
                     html.Span(f"感測器錯誤: {str(e)}", style={'color': '#e74c3c'})
                 ])
 
@@ -938,17 +900,20 @@ class EEGDashboardApp:
                     subjects = subjects_data
                 else:
                     subjects = self.db_writer.get_subjects()
-                
-                subject_options = [{'label': f"{s['subject_id']} ({s['gender']}, {s['age']}歲)", 'value': s['subject_id']} for s in subjects]
-                
+
+                subject_options = [
+                    {'label': f"{s['subject_id']} ({s['gender']}, {s['age']}years old)", 'value': s['subject_id']} for s
+                    in subjects]
+
                 # 獲取環境音效列表（同樣優先使用管理頁面的數據）
                 if sounds_data and len(sounds_data) > 0:
                     sounds = sounds_data
                 else:
                     sounds = self.db_writer.get_ambient_sounds()
-                
-                sound_options = [{'label': f"{s['sound_name']} ({s['style_category']})", 'value': s['id']} for s in sounds]
-                
+
+                sound_options = [{'label': f"{s['sound_name']} ({s['style_category']})", 'value': s['id']} for s in
+                                 sounds]
+
                 return subject_options, sound_options
             except Exception as e:
                 logger.error(f"Error updating dropdown options: {e}")
@@ -957,7 +922,7 @@ class EEGDashboardApp:
         @self.app.callback(
             Output("experiment-status", "children"),
             [Input("start-experiment-btn", "n_clicks"),
-             Input("start-recording-btn", "n_clicks"), 
+             Input("start-recording-btn", "n_clicks"),
              Input("stop-recording-btn", "n_clicks"),
              Input("stop-experiment-btn", "n_clicks"),
              Input("quick-test-session-btn", "n_clicks"),
@@ -967,8 +932,9 @@ class EEGDashboardApp:
              State("eye-state-dropdown", "value")],
             prevent_initial_call=True
         )
-        def handle_experiment_control(start_exp_clicks, start_rec_clicks, stop_rec_clicks, stop_exp_clicks, quick_test_clicks, n,
-                                     subject_id, ambient_sound_id, eye_state):
+        def handle_experiment_control(start_exp_clicks, start_rec_clicks, stop_rec_clicks, stop_exp_clicks,
+                                      quick_test_clicks, n,
+                                      subject_id, ambient_sound_id, eye_state):
             """處理實驗控制流程"""
             try:
                 ctx = callback_context
@@ -976,13 +942,13 @@ class EEGDashboardApp:
                     # 定期狀態更新
                     if self.experiment_state['experiment_running']:
                         session_id = self.experiment_state['current_session_id']
-                        recording_status = "🔴 錄音中" if self.experiment_state['recording_active'] else "⚪ 待機"
-                        return f"📊 實驗進行中 | 會話: {session_id} | {recording_status}"
+                        recording_status = "🔴 Recording" if self.experiment_state['recording_active'] else "⚪ Standby"
+                        return f"📊 Experiment in progress | Conversation: {session_id} | {recording_status}"
                     else:
-                        return "⚪ 等待開始實驗..."
+                        return "⚪ Waiting to start expriment ..."
 
                 button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-                
+
                 if button_id == "quick-test-session-btn" and quick_test_clicks:
                     if not self.experiment_state['experiment_running']:
                         # 創建快速測試會話 - 使用默認參數
@@ -994,7 +960,7 @@ class EEGDashboardApp:
                             researcher_name="QuickTest",
                             notes="Quick test session - auto-generated"
                         )
-                        
+
                         if session_id:
                             self.experiment_state.update({
                                 'current_session_id': session_id,
@@ -1008,11 +974,11 @@ class EEGDashboardApp:
                             return "❌ 快速測試會話啟動失敗"
                     else:
                         return "⚠️ 實驗已在進行中，請先停止當前實驗"
-                
+
                 elif button_id == "start-experiment-btn" and start_exp_clicks:
                     if not subject_id:
-                        return "❌ 請先選擇受試者ID"
-                    
+                        return "❌ Please select a Subject ID first"
+
                     if not self.experiment_state['experiment_running']:
                         # 開始新的實驗會話
                         session_id = self.db_writer.start_experiment_session(
@@ -1022,7 +988,7 @@ class EEGDashboardApp:
                             researcher_name="System",
                             notes="Automated experiment session"
                         )
-                        
+
                         if session_id:
                             self.experiment_state.update({
                                 'current_session_id': session_id,
@@ -1031,21 +997,21 @@ class EEGDashboardApp:
                                 'selected_sound': ambient_sound_id,
                                 'selected_eye_state': eye_state
                             })
-                            return f"✅ 實驗已開始 | 會話ID: {session_id}"
+                            return f"✅ Experiment started | Conversation ID: {session_id}"
                         else:
-                            return "❌ 實驗啟動失敗"
+                            return "❌ Experiment failed to start"
                     else:
-                        return "⚠️ 實驗已在進行中"
-                
+                        return "⚠️ Experiment already in progress"
+
                 elif button_id == "start-recording-btn" and start_rec_clicks:
                     if not self.experiment_state['experiment_running']:
-                        return "❌ 請先開始實驗"
-                    
+                        return "❌ Please start the experiment first"
+
                     if not self.experiment_state['recording_active']:
                         # 生成錄音群組ID
                         session_id = self.experiment_state['current_session_id']
                         recording_group_id = f"{session_id}_rec_{int(time.time())}"
-                        
+
                         # 開始音頻錄音
                         if self.audio_recorder:
                             success = self.audio_recorder.start_recording(recording_group_id)
@@ -1054,14 +1020,14 @@ class EEGDashboardApp:
                                     'current_recording_group_id': recording_group_id,
                                     'recording_active': True
                                 })
-                                return f"🔴 錄音已開始 | 群組ID: {recording_group_id}"
+                                return f"🔴 Recording started | Group ID: {recording_group_id}"
                             else:
-                                return "❌ 錄音啟動失敗"
+                                return "❌ Recording failed to start"
                         else:
-                            return "❌ 音頻錄製器未初始化"
+                            return "❌ Audio recorder not initialized"
                     else:
-                        return "⚠️ 已在錄音中"
-                
+                        return "⚠️ Recording in progress"
+
                 elif button_id == "stop-recording-btn" and stop_rec_clicks:
                     if self.experiment_state['recording_active']:
                         # 停止音頻錄音
@@ -1072,24 +1038,24 @@ class EEGDashboardApp:
                                 'recording_active': False
                             })
                             if filename:
-                                return f"✅ 錄音已停止 | 檔案: {os.path.basename(filename)}"
+                                return f"✅ Recording stopped | File: {os.path.basename(filename)}"
                             else:
-                                return "⚠️ 錄音停止，但儲存失敗"
+                                return "⚠️ Recording stopped, but saving failed"
                         else:
-                            return "❌ 音頻錄製器未初始化"
+                            return "❌ Audio recorder not initialized"
                     else:
-                        return "⚠️ 目前沒有錄音"
-                
+                        return "⚠️ No recording currently"
+
                 elif button_id == "stop-experiment-btn" and stop_exp_clicks:
                     if self.experiment_state['experiment_running']:
                         # 如果還在錄音，先停止錄音
                         if self.experiment_state['recording_active'] and self.audio_recorder:
                             self.audio_recorder.stop_recording(self.db_writer)
-                        
+
                         # 結束實驗會話
                         session_id = self.experiment_state['current_session_id']
                         success = self.db_writer.end_experiment_session(session_id)
-                        
+
                         if success:
                             self.experiment_state.update({
                                 'current_session_id': None,
@@ -1099,17 +1065,17 @@ class EEGDashboardApp:
                                 'selected_subject': None,
                                 'selected_sound': None
                             })
-                            return f"✅ 實驗已結束 | 會話: {session_id}"
+                            return f"✅ Experiment ended | Conversation: {session_id}"
                         else:
-                            return "❌ 實驗結束失敗"
+                            return "❌ Experiment failed to end"
                     else:
-                        return "⚠️ 沒有進行中的實驗"
-                
-                return "⚪ 等待操作..."
-                
+                        return "⚠️ No experiment in progress"
+
+                return "⚪ Waiting for operation..."
+
             except Exception as e:
                 logger.error(f"Error in handle_experiment_control: {e}")
-                return f"❌ 實驗控制錯誤: {str(e)}"
+                return f"❌ Experiment control error: {str(e)}"
 
         @self.app.callback(
             Output("recording-status", "children"),
@@ -1127,23 +1093,23 @@ class EEGDashboardApp:
                 # 檢查音頻模組是否可用
                 status = self.audio_recorder.get_recording_status()
                 if not status.get('audio_available', False):
-                    return "❌ 音頻模組未安裝 (pip install sounddevice scipy)"
+                    return "❌ Audio module not installed (pip install sounddevice scipy)"
 
                 ctx = callback_context
                 if not ctx.triggered:
                     # 定期狀態更新
                     if status['is_recording']:
                         elapsed = status['elapsed_time']
-                        group_id = status['current_group_id'] or "未知"
-                        return f"🔴 錄音中... ({elapsed:.0f}秒) | 群組ID: {group_id}"
+                        group_id = status['current_group_id'] or "Unknown"
+                        return f"🔴 Recording in progress... ({elapsed:.0f}秒) | Group ID: {group_id}"
                     else:
                         device_info = self.audio_recorder.get_device_info()
                         if device_info.get('available', False) and 'error' not in device_info:
-                            device_name = device_info.get('name', '未知設備')
-                            return f"⚪ 待機中 | 設備: {device_name}"
+                            device_name = device_info.get('name', 'Unknown Device')
+                            return f"⚪ On standby | Device: {device_name}"
                         else:
-                            error_msg = device_info.get('error', '未知錯誤')
-                            return f"⚠️ 設備錯誤: {error_msg}"
+                            error_msg = device_info.get('error', 'Unknown Error')
+                            return f"⚠️ Devicec error: {error_msg}"
 
                 button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
@@ -1937,4 +1903,4 @@ class EEGDashboardApp:
 #     def run(self, host='0.0.0.0', port=8052, debug=False):
 #         """執行Dash應用程式"""
 #         logger.info(f"🚀 Starting EEG Dashboard on http://{host}:{port}")
-#         self.app.run(host=host, port=port, debug=debug, use_reloader=False)
+#         self.app.run(host=host, port=port, debug=debug, use_reloader=False)s
