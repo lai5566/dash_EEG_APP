@@ -1,17 +1,19 @@
 """增強型EEG資料庫服務"""
 
-
 import sqlite3
 import threading
 import time
 import json
 import numpy as np
+import logging
 from typing import List, Dict, Optional
 from datetime import datetime, timezone, timedelta
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from resources.config.app_config import DATABASE_PATH, DATABASE_WRITE_INTERVAL
+
+logger = logging.getLogger(__name__)
 
 
 class TimeUtils:
@@ -521,6 +523,7 @@ class EnhancedDatabaseWriter:
             if self.unified_aggregator.should_flush(timestamp):
                 # 使用傳入的錄音群組ID或從數據中獲取
                 current_group_id = recording_group_id or data.get('recording_group_id')
+                logger.debug(f"觸發聚合器flush - timestamp: {timestamp}, group_id: {current_group_id}")
                 
                 flushed_record = self.unified_aggregator.flush_record(
                     self.current_session_id, 
@@ -528,6 +531,8 @@ class EnhancedDatabaseWriter:
                 )
                 
                 if flushed_record:
+                    logger.info(f"成功flush統一記錄到資料庫 - voltage樣本數: {len(flushed_record.get('voltage_data', []))}")
+                    
                     # 轉換為數據庫格式
                     db_record = (
                         flushed_record['session_id'],

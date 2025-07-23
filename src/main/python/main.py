@@ -284,7 +284,12 @@ class EEGApplication:
                 
             # 確保有當前會話ID並將數據添加到聚合器
             if self.db_writer.current_session_id:
-                self.db_writer.add_data_to_aggregator(timestamp, current_group_id, **data)
+                # 移除data中的timestamp以避免參數衝突
+                data_copy = {k: v for k, v in data.items() if k != 'timestamp'}
+                self.db_writer.add_data_to_aggregator(timestamp, current_group_id, **data_copy)
+                logger.debug(f"數據已添加到聚合器 - Session: {self.db_writer.current_session_id}, Group: {current_group_id}")
+            else:
+                logger.warning(f"無活動會話 - 數據未添加到unified_records。數據鍵: {list(data.keys())}")
             
         except Exception as e:
             logger.error(f"Error processing serial data: {e}")
