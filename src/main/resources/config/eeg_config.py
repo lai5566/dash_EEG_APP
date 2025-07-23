@@ -1,12 +1,12 @@
 """EEG配置設定"""
 
 # 串列埠配置
-SERIAL_PORT = "/dev/tty.usbserial-1410"
+SERIAL_PORT = "/dev/tty.usbserial-11410"
 BAUD_RATE = 57600
 
 # 資料處理
 WINDOW_SIZE = 512
-FS = 256  # 取樣頻率
+FS = 512  # 取樣頻率 (修正為實際設備頻率 513.3Hz)
 BATCH_SIZE = 100
 
 # 效能設定
