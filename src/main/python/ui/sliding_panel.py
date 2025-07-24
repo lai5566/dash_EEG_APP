@@ -115,7 +115,8 @@ class SlidingPanel:
                                             type="text",
                                             placeholder="例如: S001, P001",
                                             style={'width': '100%', 'padding': '12px', 
-                                                  'marginBottom': '15px', 'fontSize': '14px',
+                                                  'marginBottom': '20px', 'borderRadius': '12px',
+                                                'border': '2px solid #e2e8f0', 'fontSize': '14px',
                                                   'border': '2px solid #ecf0f1', 
                                                   'borderRadius': '8px',
                                                   'transition': 'border-color 0.3s ease'}
@@ -150,7 +151,8 @@ class SlidingPanel:
                                                 min=0, max=150,
                                                 placeholder="年齡",
                                                 style={'width': '100%', 'padding': '12px', 
-                                                      'marginBottom': '15px', 'fontSize': '14px',
+                                                      'marginBottom': '20px', 'borderRadius': '12px',
+                                                'border': '2px solid #e2e8f0', 'fontSize': '14px',
                                                       'border': '2px solid #ecf0f1', 
                                                       'borderRadius': '8px'}
                                             ),
@@ -166,10 +168,11 @@ class SlidingPanel:
                                             id="researcher-name-input-panel",
                                             type="text",
                                             placeholder="研究者姓名",
-                                            style={'width': '100%', 'padding': '12px', 
-                                                  'marginBottom': '15px', 'fontSize': '14px',
-                                                  'border': '2px solid #ecf0f1', 
-                                                  'borderRadius': '8px'}
+                                            style={'width': '100%', 'padding': '14px 16px', 
+                                                  'marginBottom': '20px', 'fontSize': '15px',
+                                                  'border': '2px solid #e2e8f0', 
+                                                  'borderRadius': '12px', 'background': 'white',
+                                                  'transition': 'all 0.3s ease', 'fontWeight': '500'}
                                         ),
                                     ]),
                                     
@@ -181,10 +184,10 @@ class SlidingPanel:
                                         dcc.Textarea(
                                             id="subject-notes-input-panel",
                                             placeholder="受試者備註資訊...",
-                                            style={'width': '100%', 'height': '80px', 'padding': '12px',
-                                                  'border': '2px solid #ecf0f1', 'borderRadius': '8px',
-                                                  'marginBottom': '20px', 'resize': 'vertical',
-                                                  'fontSize': '14px'}
+                                            style={'width': '100%', 'height': '90px', 'padding': '14px 16px',
+                                                  'border': '2px solid #e2e8f0', 'borderRadius': '12px',
+                                                  'marginBottom': '25px', 'resize': 'vertical', 'background': 'white',
+                                                  'fontSize': '15px', 'transition': 'all 0.3s ease', 'fontWeight': '500'}
                                         ),
                                     ]),
                                     
@@ -202,11 +205,14 @@ class SlidingPanel:
                                     
                                     # 操作狀態顯示
                                     html.Div(id="subject-status-panel", 
-                                            style={'marginBottom': '20px', 'padding': '12px',
-                                                  'borderRadius': '8px', 'textAlign': 'center',
-                                                  'fontSize': '14px', 'fontWeight': 'bold'}),
+                                            style={'marginBottom': '0', 'padding': '16px',
+                                                  'borderRadius': '12px', 'textAlign': 'center',
+                                                  'fontSize': '14px', 'fontWeight': '600'}),
                                     
-                                ], style={'marginBottom': '30px'}),
+                                ], style={'background': 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                                         'padding': '30px', 'borderRadius': '16px', 'marginBottom': '25px',
+                                         'border': '1px solid rgba(148, 163, 184, 0.2)',
+                                         'boxShadow': '0 4px 20px rgba(0, 0, 0, 0.05)'}),
                                 
                                 # 現有受試者列表
                                 html.Div([
@@ -240,10 +246,11 @@ class SlidingPanel:
                                             id="sound-name-input-panel",
                                             type="text",
                                             placeholder="例如: 森林白噪音, 海浪聲",
-                                            style={'width': '100%', 'padding': '12px', 
-                                                  'marginBottom': '15px', 'fontSize': '14px',
-                                                  'border': '2px solid #ecf0f1', 
-                                                  'borderRadius': '8px'}
+                                            style={'width': '100%', 'padding': '14px 16px', 
+                                                  'marginBottom': '20px', 'fontSize': '15px',
+                                                  'border': '2px solid #e2e8f0', 
+                                                  'borderRadius': '12px', 'background': 'white',
+                                                  'transition': 'all 0.3s ease', 'fontWeight': '500'}
                                         ),
                                     ]),
                                     
@@ -304,10 +311,10 @@ class SlidingPanel:
                                         dcc.Textarea(
                                             id="sound-description-input-panel",
                                             placeholder="音效描述和用途說明...",
-                                            style={'width': '100%', 'height': '80px', 'padding': '12px',
-                                                  'border': '2px solid #ecf0f1', 'borderRadius': '8px',
-                                                  'marginBottom': '20px', 'resize': 'vertical',
-                                                  'fontSize': '14px'}
+                                            style={'width': '100%', 'height': '90px', 'padding': '14px 16px',
+                                                  'border': '2px solid #e2e8f0', 'borderRadius': '12px',
+                                                  'marginBottom': '25px', 'resize': 'vertical', 'background': 'white',
+                                                  'fontSize': '15px', 'transition': 'all 0.3s ease', 'fontWeight': '500'}
                                         ),
                                     ]),
                                     
@@ -325,11 +332,14 @@ class SlidingPanel:
                                     
                                     # 上傳狀態顯示
                                     html.Div(id="sound-status-panel", 
-                                            style={'marginBottom': '20px', 'padding': '12px',
-                                                  'borderRadius': '8px', 'textAlign': 'center',
-                                                  'fontSize': '14px', 'fontWeight': 'bold'}),
+                                            style={'marginBottom': '0', 'padding': '16px',
+                                                  'borderRadius': '12px', 'textAlign': 'center',
+                                                  'fontSize': '14px', 'fontWeight': '600'}),
                                     
-                                ], style={'marginBottom': '30px'}),
+                                ], style={'background': 'linear-gradient(135deg, #fef3f2 0%, #fee2e2 100%)',
+                                         'padding': '30px', 'borderRadius': '16px', 'marginBottom': '25px',
+                                         'border': '1px solid rgba(239, 68, 68, 0.2)',
+                                         'boxShadow': '0 4px 20px rgba(239, 68, 68, 0.08)'}),
                                 
                                 # 現有音效列表
                                 html.Div([
@@ -412,7 +422,7 @@ class SlidingPanel:
                 if new_state:  # 打開面板
                     panel_style = {
                         'position': 'fixed', 'left': '0', 'top': '0',
-                        'width': '100vw', 'height': '100vh', 'backgroundColor': 'white',
+                        'width': '90vw', 'height': '100vh', 'backgroundColor': 'white',
                         'zIndex': '1000', 'transition': 'left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                         'boxShadow': '2px 0 20px rgba(0,0,0,0.3)', 'overflow': 'hidden'
                     }
@@ -474,19 +484,23 @@ class SlidingPanel:
             if trigger_id == "subjects-tab-btn":
                 # 切換到受試者標籤
                 subjects_tab_style = {
-                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
-                    'backgroundColor': '#3498db', 'color': 'white', 'fontSize': '13px', 
-                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '8px 0 0 8px'
+                    'flex': '1', 'padding': '16px 20px', 'border': 'none', 
+                    'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                    'color': 'white', 'fontSize': '14px', 'cursor': 'pointer', 
+                    'fontWeight': '600', 'borderRadius': '12px', 'margin': '0 4px',
+                    'boxShadow': '0 4px 15px rgba(102, 126, 234, 0.3)', 'transition': 'all 0.3s ease'
                 }
                 sounds_tab_style = {
-                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
-                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px',
-                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0'
+                    'flex': '1', 'padding': '16px 20px', 'border': '2px solid #e8ecf0', 
+                    'backgroundColor': 'white', 'color': '#64748b', 'fontSize': '14px',
+                    'cursor': 'pointer', 'fontWeight': '600', 'borderRadius': '12px', 
+                    'margin': '0 4px', 'transition': 'all 0.3s ease'
                 }
                 history_tab_style = {
-                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
-                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px',
-                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0 8px 8px 0'
+                    'flex': '1', 'padding': '16px 20px', 'border': '2px solid #e8ecf0', 
+                    'backgroundColor': 'white', 'color': '#64748b', 'fontSize': '14px',
+                    'cursor': 'pointer', 'fontWeight': '600', 'borderRadius': '12px', 
+                    'margin': '0 4px', 'transition': 'all 0.3s ease'
                 }
                 subjects_content_style = {'display': 'block'}
                 sounds_content_style = {'display': 'none'}
@@ -495,19 +509,23 @@ class SlidingPanel:
             elif trigger_id == "sounds-tab-btn":
                 # 切換到音效標籤
                 subjects_tab_style = {
-                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
-                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px', 
-                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '8px 0 0 8px'
+                    'flex': '1', 'padding': '16px 20px', 'border': '2px solid #e8ecf0', 
+                    'backgroundColor': 'white', 'color': '#64748b', 'fontSize': '14px', 
+                    'cursor': 'pointer', 'fontWeight': '600', 'borderRadius': '12px', 
+                    'margin': '0 4px', 'transition': 'all 0.3s ease'
                 }
                 sounds_tab_style = {
-                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
-                    'backgroundColor': '#e74c3c', 'color': 'white', 'fontSize': '13px',
-                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0'
+                    'flex': '1', 'padding': '16px 20px', 'border': 'none', 
+                    'background': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+                    'color': 'white', 'fontSize': '14px', 'cursor': 'pointer', 
+                    'fontWeight': '600', 'borderRadius': '12px', 'margin': '0 4px',
+                    'boxShadow': '0 4px 15px rgba(245, 87, 108, 0.3)', 'transition': 'all 0.3s ease'
                 }
                 history_tab_style = {
-                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
-                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px',
-                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0 8px 8px 0'
+                    'flex': '1', 'padding': '16px 20px', 'border': '2px solid #e8ecf0', 
+                    'backgroundColor': 'white', 'color': '#64748b', 'fontSize': '14px',
+                    'cursor': 'pointer', 'fontWeight': '600', 'borderRadius': '12px', 
+                    'margin': '0 4px', 'transition': 'all 0.3s ease'
                 }
                 subjects_content_style = {'display': 'none'}
                 sounds_content_style = {'display': 'block'}
@@ -516,19 +534,23 @@ class SlidingPanel:
             else:  # history-tab-btn
                 # 切換到歷史記錄標籤
                 subjects_tab_style = {
-                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
-                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px', 
-                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '8px 0 0 8px'
+                    'flex': '1', 'padding': '16px 20px', 'border': '2px solid #e8ecf0', 
+                    'backgroundColor': 'white', 'color': '#64748b', 'fontSize': '14px', 
+                    'cursor': 'pointer', 'fontWeight': '600', 'borderRadius': '12px', 
+                    'margin': '0 4px', 'transition': 'all 0.3s ease'
                 }
                 sounds_tab_style = {
-                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
-                    'backgroundColor': '#95a5a6', 'color': 'white', 'fontSize': '13px',
-                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0'
+                    'flex': '1', 'padding': '16px 20px', 'border': '2px solid #e8ecf0', 
+                    'backgroundColor': 'white', 'color': '#64748b', 'fontSize': '14px',
+                    'cursor': 'pointer', 'fontWeight': '600', 'borderRadius': '12px', 
+                    'margin': '0 4px', 'transition': 'all 0.3s ease'
                 }
                 history_tab_style = {
-                    'flex': '1', 'padding': '12px 16px', 'border': 'none', 
-                    'backgroundColor': '#27ae60', 'color': 'white', 'fontSize': '13px',
-                    'cursor': 'pointer', 'fontWeight': 'bold', 'borderRadius': '0 8px 8px 0'
+                    'flex': '1', 'padding': '16px 20px', 'border': 'none', 
+                    'background': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 
+                    'color': 'white', 'fontSize': '14px', 'cursor': 'pointer', 
+                    'fontWeight': '600', 'borderRadius': '12px', 'margin': '0 4px',
+                    'boxShadow': '0 4px 15px rgba(79, 172, 254, 0.3)', 'transition': 'all 0.3s ease'
                 }
                 subjects_content_style = {'display': 'none'}
                 sounds_content_style = {'display': 'none'}
