@@ -30,7 +30,7 @@ DATABASE_WRITE_INTERVAL = 2.0  # 秒
 
 # 使用者介面設定
 UI_CONFIG = {
-    'title': "EEG監控系統",
+    'title': "EEG Monitoring System",
     'max_points': 15,        # 減少最大顯示點數
     'chart_height': 500,     # 減少圖表高度以節省渲染資源
     'update_interval': 500,  # 增加更新間隔（毫秒）適應Pi4性能

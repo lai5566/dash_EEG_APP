@@ -348,18 +348,18 @@ class EEGDashboardApp:
                                                    'fontSize': '14px', 'backgroundColor': '#007bff',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
                                                    'cursor': 'pointer', 'width': '48%'}),
-                                html.Button("🎙️ Start Audio Recording", id="start-recording-btn",
+                                html.Button("Start Audio Recording", id="start-recording-btn",
                                             style={'marginBottom': '10px', 'padding': '10px 20px',
                                                    'fontSize': '14px', 'backgroundColor': '#28a745',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
                                                    'cursor': 'pointer', 'width': '48%', 'disabled': True}),
-                                html.Button("⏹️ Stop Recording", id="stop-recording-btn",
+                                html.Button("Stop Recording", id="stop-recording-btn",
                                             style={'marginRight': '10px', 'marginBottom': '10px',
                                                    'padding': '10px 20px',
                                                    'fontSize': '14px', 'backgroundColor': '#dc3545',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
                                                    'cursor': 'pointer', 'width': '48%', 'disabled': True}),
-                                html.Button("🛑 Stop Experiment", id="stop-experiment-btn",
+                                html.Button("Stop Experiment", id="stop-experiment-btn",
                                             style={'marginBottom': '10px', 'padding': '10px 20px',
                                                    'fontSize': '14px', 'backgroundColor': '#6c757d',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
@@ -520,6 +520,9 @@ class EEGDashboardApp:
                     subplot_titles=band_names,
                     vertical_spacing=0.05
                 )
+                # 在畫圖前把各頻帶信號乘 1000，變成毫伏
+                for band_key in fft_bands:
+                    fft_bands[band_key] = fft_bands[band_key] * 1000000  # V → uV
 
                 # 計算時間軸
                 if len(fft_bands) > 0:
@@ -730,39 +733,75 @@ class EEGDashboardApp:
                 logger.error(f"Error in update_blink_timeline: {e}")
                 return go.Figure()
 
+        # @self.app.callback(
+        #     Output("blink-count-chart", "figure"),
+        #     Input("interval", "n_intervals")
+        # )
+        # def update_blink_count_chart(n):
+        #     """更新眨眼計數圖表"""
+        #     try:
+        #         blink_data = self.data_buffer.get_blink_data()
+        #         count_history = blink_data['count_history']
+        #
+        #         fig = go.Figure()
+        #
+        #         if count_history:
+        #             times, counts = zip(*count_history)
+        #             base_time = times[0] if times else 0
+        #             rel_times = [(t - base_time) for t in times]
+        #
+        #             fig.add_trace(go.Scatter(
+        #                 x=rel_times, y=counts,
+        #                 mode='lines+markers',
+        #                 name='Cumulative Count',
+        #                 line=dict(color='#9467bd', width=2),
+        #                 marker=dict(size=4)
+        #             ))
+        #
+        #         fig.update_layout(
+        #             xaxis_title="Time(s)",
+        #             yaxis_title="Count",
+        #             height=200,
+        #             margin=dict(l=40, r=20, t=20, b=40),
+        #             plot_bgcolor='white'
+        #         )
+        #
+        #         return fig
+        #
+        #     except Exception as e:
+        #         logger.error(f"Error in update_blink_count_chart: {e}")
+        #         return go.Figure()
+
         @self.app.callback(
             Output("blink-count-chart", "figure"),
             Input("interval", "n_intervals")
         )
         def update_blink_count_chart(n):
-            """更新眨眼計數圖表"""
+            """更新眨眼計數為數字顯示"""
             try:
                 blink_data = self.data_buffer.get_blink_data()
                 count_history = blink_data['count_history']
 
-                fig = go.Figure()
+                # 取最新一筆計數
+                latest_count = count_history[-1][1] if count_history else 0
 
-                if count_history:
-                    times, counts = zip(*count_history)
-                    base_time = times[0] if times else 0
-                    rel_times = [(t - base_time) for t in times]
+                # 建立一個 number indicator
+                fig = go.Figure(go.Indicator(
+                    mode="number",
+                    value=latest_count,
+                    title={
+                        "text": "Blink Count",
+                        "font": {"size": 16}
+                    },
+                    domain={"x": [0, 1], "y": [0, 1]}
+                ))
 
-                    fig.add_trace(go.Scatter(
-                        x=rel_times, y=counts,
-                        mode='lines+markers',
-                        name='Cumulative Count',
-                        line=dict(color='#9467bd', width=2),
-                        marker=dict(size=4)
-                    ))
-
+                # 調整版面
                 fig.update_layout(
-                    xaxis_title="Time(s)",
-                    yaxis_title="Count",
-                    height=200,
-                    margin=dict(l=40, r=20, t=20, b=40),
-                    plot_bgcolor='white'
+                    height=120,
+                    margin=dict(l=20, r=20, t=40, b=20),
+                    paper_bgcolor="white"
                 )
-
                 return fig
 
             except Exception as e:
@@ -870,7 +909,7 @@ class EEGDashboardApp:
                         html.I(className="fas fa-clock",
                                style={'color': '#95a5a6', 'marginRight': '8px', 'fontSize': '14px'}),
                         html.Span(f"Update: {datetime.now().strftime('%H:%M:%S')}",
-                                  style={'fontSize': '12px', 'color': '#95a5a6'})
+                                  style={'fontSize': '18px', 'color': '#95a5a6'})
                     ])
                 ]
 
