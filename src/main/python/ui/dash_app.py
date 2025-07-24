@@ -572,7 +572,7 @@ class EEGDashboardApp:
 
                 # 更新x軸標籤
                 fig.update_xaxes(title_text="Time(s)", row=len(band_names), col=1)
-                fig.update_yaxes(title_text="Amplitude")
+                # fig.update_yaxes(title_text=") #fig.update_yaxes(title_text="Amplitude")
 
                 # 更新效能監控器
                 render_time = time.time() - start_time

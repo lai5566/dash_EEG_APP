@@ -45,7 +45,7 @@ class SlidingPanel:
                 ], id="panel-trigger", 
                    style={
                        'position': 'fixed', 'left': '0', 'top': '50%',
-                       'transform': 'translateY(-50%)', 'width': '8vw', 'height': '120px',
+                       'transform': 'translateY(-50%)', 'width': '2.5vw', 'height': '120px',
                        'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                        'borderRadius': '0 15px 15px 0', 'cursor': 'pointer',
                        'display': 'flex', 'alignItems': 'center', 'justifyContent': 'center',
@@ -71,21 +71,21 @@ class SlidingPanel:
                     html.Div([
                         # 標籤切換
                         html.Div([
-                            html.Button("👤 受試者管理", id="subjects-tab-btn", 
+                            html.Button("受試者管理", id="subjects-tab-btn",
                                        className="tab-button active",
                                        style={'flex': '1', 'padding': '12px 16px', 
                                              'border': 'none', 'backgroundColor': '#3498db',
                                              'color': 'white', 'fontSize': '13px', 
                                              'cursor': 'pointer', 'fontWeight': 'bold',
                                              'borderRadius': '8px 0 0 8px'}),
-                            html.Button("🎵 音效管理", id="sounds-tab-btn",
+                            html.Button("音效管理", id="sounds-tab-btn",
                                        className="tab-button",
                                        style={'flex': '1', 'padding': '12px 16px',
                                              'border': 'none', 'backgroundColor': '#95a5a6',
                                              'color': 'white', 'fontSize': '13px',
                                              'cursor': 'pointer', 'fontWeight': 'bold',
                                              'borderRadius': '0'}),
-                            html.Button("📊 歷史記錄", id="history-tab-btn",
+                            html.Button("歷史記錄", id="history-tab-btn",
                                        className="tab-button",
                                        style={'flex': '1', 'padding': '12px 16px',
                                              'border': 'none', 'backgroundColor': '#95a5a6',
@@ -250,7 +250,7 @@ class SlidingPanel:
                                         dcc.Input(
                                             id="sound-name-input-panel",
                                             type="text",
-                                            placeholder="例如: 森林白噪音, 海浪聲",
+                                            placeholder="例如: 森林白噪音, 嬰哭聲",
                                             style={'width': '100%', 'padding': '14px 16px', 
                                                   'marginBottom': '20px', 'fontSize': '15px',
                                                   'border': '2px solid #e2e8f0', 
@@ -268,12 +268,14 @@ class SlidingPanel:
                                         dcc.Dropdown(
                                             id="sound-category-dropdown-panel",
                                             options=[
-                                                {'label': '自然聲音', 'value': '自然聲音'},
-                                                {'label': '白噪音', 'value': '白噪音'},
-                                                {'label': '粉紅噪音', 'value': '粉紅噪音'},
-                                                {'label': '音樂', 'value': '音樂'},
-                                                {'label': '環境音', 'value': '環境音'},
-                                                {'label': '其他', 'value': '其他'}
+                                                {'label': 'Natural Sound', 'value': 'Natural Sound'},
+                                                {'label': 'White Noise', 'value': 'White Noise'},
+                                                {'label': 'Pink Noise', 'value': 'Pink Noise'},
+                                                {'label': 'Music', 'value': 'Music'},
+                                                {'label': 'Ambient Sound', 'value': 'Ambient Sound'},
+                                                {'label': 'Other', 'value': 'Other'},
+                                                {'label': 'Positive Sound', 'value': 'Positive Sound'},
+                                                {'label': 'Negative Sound', 'value': 'Negative Sound'},
                                             ],
                                             placeholder="選擇音效類別",
                                             style={'marginBottom': '15px'}
