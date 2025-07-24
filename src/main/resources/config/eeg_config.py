@@ -27,16 +27,39 @@ RAW_VALUE = 0x80
 ASIC_EEG_POWER = 0x83
 
 # EEG頻率頻帶
-BANDS = {
-    "Delta (0.5-4Hz)": (0.5, 4),
-    "Theta (4-8Hz)": (4, 8),
-    "Alpha (8-12Hz)": (8, 12),
-    "Beta (12-35Hz)": (12, 35),
-    "Gamma (35-50Hz)": (35, 50),
-    "SMR (12-15Hz)": (12, 15),
-    "Mu (8-13Hz)": (8, 13),
-    "High-Gamma (50-80Hz)": (50, 80),
+# BANDS = {
+#     "Delta (0.5-4Hz)": (0.5, 4),
+#     "Theta (4-8Hz)": (4, 8),
+#     "Alpha (8-12Hz)": (8, 12),
+#     "Beta (12-35Hz)": (12, 35),
+#     "Gamma (35-50Hz)": (35, 50),
+#     "SMR (12-15Hz)": (12, 15),
+#     "Mu (8-13Hz)": (8, 13),
+#     "High-Gamma (50-80Hz)": (50, 80),
+# }
+#常見科學
+# BANDS = {
+#     "Delta (0.5-4Hz)": (0.5, 4),
+#     "Theta (4-8Hz)": (4, 8),
+#     "Alpha (8-12Hz)": (8, 12),
+#     "Beta (12-35Hz)": (12, 35),
+#     "Gamma (35-50Hz)": (35, 50),
+#     "SMR (12-15Hz)": (12, 15),
+#     "Mu (8-13Hz)": (8, 13),
+#     "High-Gamma (50-80Hz)": (50, 80),
+# }
+#BANDS_MINDWAVE_MOBILE_2
+BANDS= {
+    "Delta (0.5-2.75Hz)": (0.5, 2.75),
+    "Theta (3.5-6.75Hz)": (3.5, 6.75),
+    "Low-Alpha (7.5-9.25Hz)": (7.5, 9.25),
+    "High-Alpha (10-11.75Hz)": (10, 11.75),
+    "Low-Beta (13-16.75Hz)": (13, 16.75),
+    "High-Beta (18-29.75Hz)": (18, 29.75),
+    "Low-Gamma (31-39.75Hz)": (31, 39.75),
+    "Mid-Gamma (41-49.75Hz)": (41, 49.75),
 }
+
 
 # ASIC頻帶名稱
 ASIC_BANDS = ["Delta", "Theta", "Low-Alpha", "High-Alpha",

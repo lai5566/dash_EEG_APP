@@ -70,6 +70,16 @@ class EEGDashboardApp:
             "Beta (12-35Hz)": (12, 35),
             "Gamma (35-50Hz)": (35, 50),
         }
+        # self.bands = {
+        #     "Delta (0.5-2.75Hz)": (0.5, 2.75),
+        #     "Theta (3.5-6.75Hz)": (3.5, 6.75),
+        #     "Low-Alpha (7.5-9.25Hz)": (7.5, 9.25),
+        #     "High-Alpha (10-11.75Hz)": (10, 11.75),
+        #     "Low-Beta (13-16.75Hz)": (13, 16.75),
+        #     "High-Beta (18-29.75Hz)": (18, 29.75),
+        #     "Low-Gamma (31-39.75Hz)": (31, 39.75),
+        #     "Mid-Gamma (41-49.75Hz)": (41, 49.75),
+        # }
 
         # 頻帶顏色
         self.band_colors = {
@@ -79,6 +89,18 @@ class EEGDashboardApp:
             "Beta (12-35Hz)": "#96CEB4",
             "Gamma (35-50Hz)": "#FFEAA7",
         }
+        # self.band_colors = {
+        #     "Delta (0.5-2.75Hz)": "#FF6B6B",  # 櫻桃紅
+        #     "Theta (3.5-6.75Hz)": "#4ECDC4",  # 青綠
+        #     "Low-Alpha (7.5-9.25Hz)": "#45B7D1",  # 天空藍
+        #     "High-Alpha (10-11.75Hz)": "#00A8E8",  # 寶石藍
+        #     "Low-Beta (13-16.75Hz)": "#96CEB4",  # 薄荷綠
+        #     "High-Beta (18-29.75Hz)": "#DDA0DD",  # 薰衣草紫
+        #     "Low-Gamma (31-39.75Hz)": "#FFB347",  # 蜜橙
+        #     "Mid-Gamma (41-49.75Hz)": "#F4D35E",  # 芥末黃
+        # }
+
+
 
         # ASIC頻帶名稱
         self.asic_bands = ["Delta", "Theta", "Low-Alpha", "High-Alpha",
