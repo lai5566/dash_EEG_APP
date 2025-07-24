@@ -108,18 +108,18 @@ class SlidingPanel:
                                     # 受試者ID
                                     html.Div([
                                         html.Label("受試者ID:", 
-                                                  style={'fontWeight': 'bold', 'marginBottom': '5px',
-                                                        'display': 'block', 'color': '#2c3e50'}),
+                                                  style={'fontWeight': '600', 'marginBottom': '8px',
+                                                        'display': 'block', 'color': '#1e293b', 
+                                                        'fontSize': '14px', 'letterSpacing': '0.5px'}),
                                         dcc.Input(
                                             id="subject-id-input-panel",
                                             type="text",
                                             placeholder="例如: S001, P001",
-                                            style={'width': '100%', 'padding': '12px', 
-                                                  'marginBottom': '20px', 'borderRadius': '12px',
-                                                'border': '2px solid #e2e8f0', 'fontSize': '14px',
-                                                  'border': '2px solid #ecf0f1', 
-                                                  'borderRadius': '8px',
-                                                  'transition': 'border-color 0.3s ease'}
+                                            style={'width': '100%', 'padding': '14px 16px', 
+                                                  'marginBottom': '20px', 'fontSize': '15px',
+                                                  'border': '2px solid #e2e8f0', 
+                                                  'borderRadius': '12px', 'background': 'white',
+                                                  'transition': 'all 0.3s ease', 'fontWeight': '500'}
                                         ),
                                     ]),
                                     
@@ -127,8 +127,9 @@ class SlidingPanel:
                                     html.Div([
                                         html.Div([
                                             html.Label("性別:", 
-                                                      style={'fontWeight': 'bold', 'marginBottom': '5px',
-                                                            'display': 'block', 'color': '#2c3e50'}),
+                                                      style={'fontWeight': '600', 'marginBottom': '8px',
+                                                            'display': 'block', 'color': '#1e293b', 
+                                                            'fontSize': '14px', 'letterSpacing': '0.5px'}),
                                             dcc.Dropdown(
                                                 id="subject-gender-dropdown-panel",
                                                 options=[
@@ -143,18 +144,19 @@ class SlidingPanel:
                                         
                                         html.Div([
                                             html.Label("年齡:", 
-                                                      style={'fontWeight': 'bold', 'marginBottom': '5px',
-                                                            'display': 'block', 'color': '#2c3e50'}),
+                                                      style={'fontWeight': '600', 'marginBottom': '8px',
+                                                            'display': 'block', 'color': '#1e293b', 
+                                                            'fontSize': '14px', 'letterSpacing': '0.5px'}),
                                             dcc.Input(
                                                 id="subject-age-input-panel",
                                                 type="number",
                                                 min=0, max=150,
                                                 placeholder="年齡",
-                                                style={'width': '100%', 'padding': '12px', 
-                                                      'marginBottom': '20px', 'borderRadius': '12px',
-                                                'border': '2px solid #e2e8f0', 'fontSize': '14px',
-                                                      'border': '2px solid #ecf0f1', 
-                                                      'borderRadius': '8px'}
+                                                style={'width': '100%', 'padding': '14px 16px', 
+                                                      'marginBottom': '20px', 'fontSize': '15px',
+                                                      'border': '2px solid #e2e8f0', 
+                                                      'borderRadius': '12px', 'background': 'white',
+                                                      'transition': 'all 0.3s ease', 'fontWeight': '500'}
                                             ),
                                         ], style={'flex': '1', 'marginLeft': '10px'}),
                                     ], style={'display': 'flex'}),
@@ -162,8 +164,9 @@ class SlidingPanel:
                                     # 研究者姓名
                                     html.Div([
                                         html.Label("研究者姓名:", 
-                                                  style={'fontWeight': 'bold', 'marginBottom': '5px',
-                                                        'display': 'block', 'color': '#2c3e50'}),
+                                                  style={'fontWeight': '600', 'marginBottom': '8px',
+                                                        'display': 'block', 'color': '#1e293b', 
+                                                        'fontSize': '14px', 'letterSpacing': '0.5px'}),
                                         dcc.Input(
                                             id="researcher-name-input-panel",
                                             type="text",
@@ -179,8 +182,9 @@ class SlidingPanel:
                                     # 備註
                                     html.Div([
                                         html.Label("備註:", 
-                                                  style={'fontWeight': 'bold', 'marginBottom': '5px',
-                                                        'display': 'block', 'color': '#2c3e50'}),
+                                                  style={'fontWeight': '600', 'marginBottom': '8px',
+                                                        'display': 'block', 'color': '#1e293b', 
+                                                        'fontSize': '14px', 'letterSpacing': '0.5px'}),
                                         dcc.Textarea(
                                             id="subject-notes-input-panel",
                                             placeholder="受試者備註資訊...",
@@ -240,8 +244,9 @@ class SlidingPanel:
                                     # 音效名稱
                                     html.Div([
                                         html.Label("音效名稱:", 
-                                                  style={'fontWeight': 'bold', 'marginBottom': '5px',
-                                                        'display': 'block', 'color': '#2c3e50'}),
+                                                  style={'fontWeight': '600', 'marginBottom': '8px',
+                                                        'display': 'block', 'color': '#1e293b', 
+                                                        'fontSize': '14px', 'letterSpacing': '0.5px'}),
                                         dcc.Input(
                                             id="sound-name-input-panel",
                                             type="text",
@@ -257,8 +262,9 @@ class SlidingPanel:
                                     # 音效類別
                                     html.Div([
                                         html.Label("音效類別:", 
-                                                  style={'fontWeight': 'bold', 'marginBottom': '5px',
-                                                        'display': 'block', 'color': '#2c3e50'}),
+                                                  style={'fontWeight': '600', 'marginBottom': '8px',
+                                                        'display': 'block', 'color': '#1e293b', 
+                                                        'fontSize': '14px', 'letterSpacing': '0.5px'}),
                                         dcc.Dropdown(
                                             id="sound-category-dropdown-panel",
                                             options=[
@@ -277,8 +283,9 @@ class SlidingPanel:
                                     # 檔案上傳
                                     html.Div([
                                         html.Label("選擇音效檔案:", 
-                                                  style={'fontWeight': 'bold', 'marginBottom': '5px',
-                                                        'display': 'block', 'color': '#2c3e50'}),
+                                                  style={'fontWeight': '600', 'marginBottom': '8px',
+                                                        'display': 'block', 'color': '#1e293b', 
+                                                        'fontSize': '14px', 'letterSpacing': '0.5px'}),
                                         dcc.Upload(
                                             id="sound-upload-panel",
                                             children=html.Div([
@@ -290,13 +297,14 @@ class SlidingPanel:
                                                               'marginTop': '5px'})
                                             ]),
                                             style={
-                                                'width': '100%', 'height': '120px',
-                                                'lineHeight': '120px', 'borderWidth': '2px',
-                                                'borderStyle': 'dashed', 'borderRadius': '12px',
-                                                'textAlign': 'center', 'margin': '10px 0',
-                                                'cursor': 'pointer', 'borderColor': '#e74c3c',
-                                                'backgroundColor': '#fdf2f2', 'color': '#2c3e50',
-                                                'transition': 'all 0.3s ease'
+                                                'width': '100%', 'height': '140px',
+                                                'lineHeight': '140px', 'borderWidth': '3px',
+                                                'borderStyle': 'dashed', 'borderRadius': '16px',
+                                                'textAlign': 'center', 'margin': '15px 0',
+                                                'cursor': 'pointer', 'borderColor': '#f472b6',
+                                                'background': 'linear-gradient(135deg, #fef7ff 0%, #fae8ff 100%)', 
+                                                'color': '#831843', 'transition': 'all 0.3s ease',
+                                                'boxShadow': '0 4px 15px rgba(244, 114, 182, 0.1)'
                                             },
                                             multiple=False,
                                             accept=".wav,.mp3,.flac"
@@ -306,8 +314,9 @@ class SlidingPanel:
                                     # 音效描述
                                     html.Div([
                                         html.Label("音效描述:", 
-                                                  style={'fontWeight': 'bold', 'marginBottom': '5px',
-                                                        'display': 'block', 'color': '#2c3e50'}),
+                                                  style={'fontWeight': '600', 'marginBottom': '8px',
+                                                        'display': 'block', 'color': '#1e293b', 
+                                                        'fontSize': '14px', 'letterSpacing': '0.5px'}),
                                         dcc.Textarea(
                                             id="sound-description-input-panel",
                                             placeholder="音效描述和用途說明...",
