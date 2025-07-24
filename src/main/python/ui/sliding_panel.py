@@ -430,16 +430,19 @@ class SlidingPanel:
                 
                 if new_state:  # 打開面板
                     panel_style = {
-                        'position': 'fixed', 'left': '0', 'top': '0',
-                        'width': '90vw', 'height': '100vh', 'backgroundColor': 'white',
-                        'zIndex': '1000', 'transition': 'left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                        'boxShadow': '2px 0 20px rgba(0,0,0,0.3)', 'overflow': 'hidden'
+                        'position': 'fixed', 'left': '5vw', 'top': '0',
+                        'width': '90vw', 'height': '100vh', 
+                        'background': 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                        'zIndex': '1000', 'transition': 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                        'boxShadow': '0 0 40px rgba(0,0,0,0.15)', 'overflow': 'hidden',
+                        'borderRadius': '0 0 20px 20px'
                     }
                     overlay_style = {
                         'position': 'fixed', 'top': '0', 'left': '0',
                         'width': '100vw', 'height': '100vh',
-                        'backgroundColor': 'rgba(0,0,0,0.5)', 'zIndex': '999',
-                        'display': 'block', 'transition': 'opacity 0.3s ease'
+                        'background': 'linear-gradient(45deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                        'backdropFilter': 'blur(2px)', 'zIndex': '999',
+                        'display': 'block', 'transition': 'all 0.3s ease'
                     }
                     icon_style = {
                         'fontSize': '18px', 'color': 'white', 
@@ -448,16 +451,19 @@ class SlidingPanel:
                     }
                 else:  # 關閉面板
                     panel_style = {
-                        'position': 'fixed', 'left': '-100vw', 'top': '0',
-                        'width': '100vw', 'height': '100vh', 'backgroundColor': 'white',
-                        'zIndex': '1000', 'transition': 'left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                        'boxShadow': '2px 0 20px rgba(0,0,0,0.3)', 'overflow': 'hidden'
+                        'position': 'fixed', 'left': '-90vw', 'top': '0',
+                        'width': '90vw', 'height': '100vh', 
+                        'background': 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                        'zIndex': '1000', 'transition': 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                        'boxShadow': '0 0 40px rgba(0,0,0,0.15)', 'overflow': 'hidden',
+                        'borderRadius': '0 0 20px 20px'
                     }
                     overlay_style = {
                         'position': 'fixed', 'top': '0', 'left': '0',
                         'width': '100vw', 'height': '100vh',
-                        'backgroundColor': 'rgba(0,0,0,0.5)', 'zIndex': '999',
-                        'display': 'none', 'transition': 'opacity 0.3s ease'
+                        'background': 'linear-gradient(45deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                        'backdropFilter': 'blur(2px)', 'zIndex': '999',
+                        'display': 'none', 'transition': 'all 0.3s ease'
                     }
                     icon_style = {
                         'fontSize': '18px', 'color': 'white', 
