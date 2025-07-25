@@ -499,105 +499,97 @@ class EEGDashboardApp:
             Input("interval", "n_intervals")
         )
         def update_fft_bands_main(n):
-            """更新FFT頻帶視覺化 (折線圖)"""
+            """更新FFT頻譜視覺化 (瀑布圖/頻譜圖流動效果)"""
             start_time = time.time()
 
             try:
-                # 取得目前視窗並進行處理
-                processed_result = self.processor.process_current_window()
+                # 從數據緩衝區獲取完整頻譜歷史數據
+                spectral_data = self.data_buffer.get_spectral_data()
+                spectral_history = spectral_data['spectral_history']
 
-                if not processed_result:
-                    return go.Figure().add_annotation(
-                        text="EEG processor error<br>Initializing...",
+                if not spectral_history or len(spectral_history) < 2:
+                    # 如果沒有足夠的頻譜數據，顯示提示信息
+                    fig = go.Figure()
+                    fig.add_annotation(
+                        text="Collecting spectral data...<br>Please wait for FFT analysis",
                         showarrow=False, x=0.5, y=0.5,
                         xref="paper", yref="paper",
-                        font=dict(size=16, color="red")
+                        font=dict(size=16, color="blue")
                     )
+                    fig.update_layout(
+                        title="FFT Spectrogram (Moving Landscape)",
+                        height=UI_CONFIG['chart_height'],
+                        margin=dict(l=40, r=15, t=40, b=60),
+                        plot_bgcolor='white'
+                    )
+                    return fig
 
-                if 'fft_bands' not in processed_result:
-                    return go.Figure().add_annotation(
-                        text="FFT frequency band data missing<br>Generating test data...",
+                # 構建時間-頻率矩陣用於瀑布圖
+                times = []
+                freq_matrix = []
+                power_matrix = []
+                
+                # 取最近的頻譜數據點
+                recent_history = list(spectral_history)[-min(40, len(spectral_history)):]
+                
+                for timestamp, freqs, powers in recent_history:
+                    if len(freqs) > 0 and len(powers) > 0:
+                        times.append(timestamp)
+                        if len(freq_matrix) == 0:
+                            # 第一次設定頻率軸
+                            freq_matrix = freqs
+                        power_matrix.append(powers)
+
+                if len(power_matrix) == 0:
+                    # 沒有有效數據
+                    fig = go.Figure()
+                    fig.add_annotation(
+                        text="No valid spectral data available",
                         showarrow=False, x=0.5, y=0.5,
-                        xref="paper", yref="paper",
-                        font=dict(size=16, color="orange")
+                        xref="paper", yref="paper"
                     )
+                    return fig
 
-                fft_bands = processed_result['fft_bands']
+                # 轉換為numpy陣列以便處理
+                power_matrix = np.array(power_matrix)
+                freq_matrix = np.array(freq_matrix)
+                
+                # 計算相對時間（最新的為0，往前遞減）
+                if len(times) > 0:
+                    current_time = times[-1]
+                    rel_times = [(t - current_time) for t in times]
+                else:
+                    rel_times = list(range(-len(power_matrix), 0))
 
-                # 驗證 FFT 頻段數據
-                if not fft_bands or all(len(band_data) == 0 for band_data in fft_bands.values()):
-                    return go.Figure().add_annotation(
-                        text="FFT frequency band is empty<br>Regenerating data...",
-                        showarrow=False, x=0.5, y=0.5,
-                        xref="paper", yref="paper",
-                        font=dict(size=16, color="orange")
-                    )
+                # 創建瀑布圖/頻譜圖
+                fig = go.Figure()
 
-                # 建立多個子圖的折線圖
-                band_names = list(self.bands.keys())
-                fig = make_subplots(
-                    rows=len(band_names),
-                    cols=1,
-                    shared_xaxes=True,
-                    subplot_titles=band_names,
-                    vertical_spacing=0.05
-                )
-                # 在畫圖前把各頻帶信號乘 1000，變成毫伏
-                for band_key in fft_bands:
-                    fft_bands[band_key] = fft_bands[band_key] * 1000000  # V → uV
+                # 使用熱力圖顯示頻譜
+                fig.add_trace(go.Heatmap(
+                    z=power_matrix.T,  # 轉置讓頻率在y軸，時間在x軸
+                    x=rel_times,
+                    y=freq_matrix,
+                    colorscale='Viridis',  # 使用Viridis色彩映射
+                    colorbar=dict(
+                        title="Power (dB)",
+                        titleside="right"
+                    ),
+                    hovertemplate='Time: %{x:.2f}s<br>Frequency: %{y:.1f}Hz<br>Power: %{z:.1f}dB<extra></extra>'
+                ))
 
-                # 計算時間軸
-                if len(fft_bands) > 0:
-                    # 找到第一個非空的頻段來計算時間軸
-                    sample_length = 0
-                    for band_data in fft_bands.values():
-                        if len(band_data) > 0:
-                            sample_length = len(band_data)
-                            break
-
-                    if sample_length > 0:
-                        t = np.arange(sample_length) / self.processor.sample_rate
-
-                        for i, (band_name, band_color) in enumerate(zip(band_names, self.band_colors.values()),
-                                                                    start=1):
-                            band_key = band_name.split(' ')[0].lower()
-                            band_signal = fft_bands.get(band_key, np.array([]))
-
-                            if len(band_signal) > 0:
-                                fig.add_trace(
-                                    go.Scatter(
-                                        x=t,
-                                        y=band_signal,
-                                        mode="lines",
-                                        line=dict(color=band_color, width=1.5),
-                                        showlegend=False
-                                    ),
-                                    row=i, col=1
-                                )
-                            else:
-                                # 如果頻段數據為空，顯示零線
-                                fig.add_trace(
-                                    go.Scatter(
-                                        x=t,
-                                        y=np.zeros(len(t)),
-                                        mode="lines",
-                                        line=dict(color="gray", width=1, dash="dash"),
-                                        showlegend=False
-                                    ),
-                                    row=i, col=1
-                                )
-
+                # 設定版面配置
                 fig.update_layout(
-                    title="FFT Band Analysis (Time-Domain Waveform)",
+                    title="EEG FFT Spectrogram - Moving Landscape View",
+                    xaxis_title="Time (s, relative to current)",
+                    yaxis_title="Frequency (Hz)",
                     height=UI_CONFIG['chart_height'],
-                    margin=dict(l=40, r=15, t=40, b=60),
-                    plot_bgcolor='white',
-                    showlegend=False
+                    margin=dict(l=50, r=15, t=40, b=60),
+                    plot_bgcolor='white'
                 )
 
-                # 更新x軸標籤
-                fig.update_xaxes(title_text="Time(s)", row=len(band_names), col=1)
-                # fig.update_yaxes(title_text=") #fig.update_yaxes(title_text="Amplitude")
+                # 設定坐標軸範圍
+                fig.update_xaxes(range=[min(rel_times) if rel_times else -20, 0])
+                fig.update_yaxes(range=[1, 50])  # EEG的主要頻率範圍
 
                 # 更新效能監控器
                 render_time = time.time() - start_time
@@ -610,7 +602,7 @@ class EEGDashboardApp:
             except Exception as e:
                 logger.error(f"Error in update_fft_bands_main: {e}")
                 return go.Figure().add_annotation(
-                    text=f"Band analysis error: {str(e)}",
+                    text=f"FFT Spectrogram error: {str(e)}",
                     showarrow=False, x=0.5, y=0.5,
                     xref="paper", yref="paper"
                 )

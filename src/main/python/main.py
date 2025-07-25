@@ -356,6 +356,18 @@ class EEGApplication:
                     if self._should_log('fair_signal'):
                         logger.info(f"Fair signal quality: {quality:.1f}")
             
+            # 處理 FFT 頻帶功率數據並存儲到緩衝區
+            if 'band_powers' in processed_data:
+                band_powers = processed_data['band_powers']
+                self.eeg_buffer.add_fft_band_powers(band_powers)
+            
+            # 處理完整頻譜數據並存儲到緩衝區 (用於瀑布圖顯示)
+            if 'spectrum_freqs' in processed_data and 'spectrum_powers' in processed_data:
+                spectrum_freqs = processed_data['spectrum_freqs']
+                spectrum_powers = processed_data['spectrum_powers']
+                if len(spectrum_freqs) > 0 and len(spectrum_powers) > 0:
+                    self.eeg_buffer.add_spectral_data(spectrum_freqs, spectrum_powers)
+            
             # 檢查偽影 (加入速率限制)
             if 'artifacts' in processed_data:
                 artifacts = processed_data['artifacts']

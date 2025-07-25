@@ -190,6 +190,39 @@ class EEGProcessor:
             logger.error(f"Error extracting FFT bands: {e}")
             return {band: np.array([]) for band in self.frequency_bands.keys()}
     
+    def compute_full_spectrum(self, data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """計算完整頻譜數據用於瀑布圖/頻譜圖顯示"""
+        try:
+            # 使用窗函數進行FFT計算
+            if USE_NUMBA and NUMBA_AVAILABLE:
+                windowed = data * hanning_window_numba(len(data))
+                fft_data = fft(windowed)
+                freqs = fftfreq(len(data), 1/self.sample_rate)
+                psd = power_spectrum_numba(fft_data)
+            else:
+                windowed = data * np.hanning(len(data))
+                fft_data = fft(windowed)
+                freqs = fftfreq(len(data), 1/self.sample_rate)
+                psd = np.abs(fft_data) ** 2
+            
+            # 只取正頻率部分
+            positive_freqs = freqs[:len(freqs)//2]
+            positive_psd = psd[:len(psd)//2]
+            
+            # 限制頻率範圍到 1-50 Hz (EEG的主要頻率範圍)
+            freq_mask = (positive_freqs >= 1) & (positive_freqs <= 50)
+            spectrum_freqs = positive_freqs[freq_mask]
+            spectrum_powers = positive_psd[freq_mask]
+            
+            # 對功率譜進行對數變換以便更好地顯示
+            spectrum_powers_db = 10 * np.log10(spectrum_powers + 1e-12)  # 避免log(0)
+            
+            return spectrum_freqs, spectrum_powers_db
+            
+        except Exception as e:
+            logger.error(f"Error computing full spectrum: {e}")
+            return np.array([]), np.array([])
+    
     def detect_artifacts(self, data: np.ndarray, threshold: float = 3.0) -> List[int]:
         """使用統計閾值檢測偽訊"""
         try:
@@ -247,6 +280,9 @@ class EEGProcessor:
             spectral_features = self.calculate_spectral_features(processed_data)
             artifacts = self.detect_artifacts(processed_data)
             
+            # 計算完整頻譜用於瀑布圖顯示
+            spectrum_freqs, spectrum_powers = self.compute_full_spectrum(processed_data)
+            
             # 計算信號品質指標
             signal_quality = self._calculate_signal_quality(processed_data)
             
@@ -254,6 +290,8 @@ class EEGProcessor:
                 'processed_data': processed_data,
                 'band_powers': band_powers,
                 'fft_bands': fft_bands,
+                'spectrum_freqs': spectrum_freqs,
+                'spectrum_powers': spectrum_powers,
                 'spectral_features': spectral_features,
                 'artifacts': artifacts,
                 'signal_quality': signal_quality,

@@ -36,6 +36,27 @@ class EnhancedCircularBuffer:
         self.blink_count = 0
         self.blink_count_history = deque(maxlen=50)
 
+        # FFT頻帶功率歷史資料 (用於流動效果)
+        self.fft_band_history = {
+            'delta': deque(maxlen=100),
+            'theta': deque(maxlen=100), 
+            'alpha': deque(maxlen=100),
+            'beta': deque(maxlen=100),
+            'gamma': deque(maxlen=100)
+        }
+        self.current_fft_bands = {
+            'delta': 0.0,
+            'theta': 0.0,
+            'alpha': 0.0,
+            'beta': 0.0,
+            'gamma': 0.0
+        }
+
+        # 完整頻譜資料 (用於瀑布圖/頻譜圖顯示)
+        self.spectral_history = deque(maxlen=60)  # 保存60個時間點的頻譜數據
+        self.current_spectrum_freqs = np.array([])
+        self.current_spectrum_powers = np.array([])
+
         # MQTT感測器資料
         self.current_temperature = 0.0
         self.current_humidity = 0.0
@@ -56,6 +77,15 @@ class EnhancedCircularBuffer:
 
             if i % 3 == 0:
                 self.blink_events.append((t, random.randint(50, 200)))
+                
+        # 初始化 FFT 頻帶測試數據
+        for j in range(50):
+            t = base_time - (50 - j) * 0.1  # 每0.1秒一個數據點
+            self.fft_band_history['delta'].append((t, random.uniform(0.1, 0.5)))
+            self.fft_band_history['theta'].append((t, random.uniform(0.2, 0.8)))
+            self.fft_band_history['alpha'].append((t, random.uniform(0.3, 1.2)))
+            self.fft_band_history['beta'].append((t, random.uniform(0.1, 0.6)))
+            self.fft_band_history['gamma'].append((t, random.uniform(0.05, 0.3)))
 
     def append(self, value: float, timestamp: float):
         """新增原始資料"""
@@ -98,6 +128,27 @@ class EnhancedCircularBuffer:
             self.blink_events.append((timestamp, intensity))
             self.blink_count += 1
             self.blink_count_history.append((timestamp, self.blink_count))
+
+    def add_fft_band_powers(self, band_powers: Dict[str, float]):
+        """新增FFT頻帶功率資料"""
+        with self.lock:
+            timestamp = time.time()
+            for band_name, power in band_powers.items():
+                if band_name in self.current_fft_bands:
+                    self.current_fft_bands[band_name] = power
+                    self.fft_band_history[band_name].append((timestamp, power))
+
+    def add_spectral_data(self, freqs: np.ndarray, powers: np.ndarray):
+        """新增完整頻譜資料用於瀑布圖顯示"""
+        with self.lock:
+            timestamp = time.time()
+            
+            # 更新當前頻譜資料
+            self.current_spectrum_freqs = freqs.copy()
+            self.current_spectrum_powers = powers.copy()
+            
+            # 添加到歷史資料 (timestamp, freqs, powers)
+            self.spectral_history.append((timestamp, freqs.copy(), powers.copy()))
 
     def add_sensor_data(self, temperature: float, humidity: float, light: int):
         """新增感測器資料"""
@@ -152,6 +203,26 @@ class EnhancedCircularBuffer:
                 'events': list(self.blink_events),
                 'count': self.blink_count,
                 'count_history': list(self.blink_count_history)
+            }
+
+    def get_fft_band_data(self) -> Dict:
+        """取得FFT頻帶功率資料"""
+        with self.lock:
+            return {
+                'current_bands': self.current_fft_bands.copy(),
+                'band_history': {
+                    band_name: list(history) 
+                    for band_name, history in self.fft_band_history.items()
+                }
+            }
+
+    def get_spectral_data(self) -> Dict:
+        """取得完整頻譜資料用於瀑布圖顯示"""
+        with self.lock:
+            return {
+                'current_freqs': self.current_spectrum_freqs.copy(),
+                'current_powers': self.current_spectrum_powers.copy(),
+                'spectral_history': list(self.spectral_history)
             }
 
     def get_sensor_data(self) -> Dict:

@@ -18,9 +18,9 @@ API_CONFIG = {
     'port': 8052,
     'debug': True,
     'threaded': True,
-    'buffer_size': 1024,  # 與APP_CONFIG保持一致
+    'buffer_size': 2024,  # 與APP_CONFIG保持一致
     'sample_rate': 512,
-    'window_size': 512,   # 與APP_CONFIG保持一致
+    'window_size': 2024,   # 與APP_CONFIG保持一致
 }
 
 # 資料庫設定
@@ -31,9 +31,9 @@ DATABASE_WRITE_INTERVAL = 2.0  # 秒
 # 使用者介面設定
 UI_CONFIG = {
     'title': "EEG Monitoring System",
-    'max_points': 15,        # 減少最大顯示點數
+    'max_points': 30,        # 減少最大顯示點數
     'chart_height': 500,     # 減少圖表高度以節省渲染資源
-    'update_interval': 500,  # 增加更新間隔（毫秒）適應Pi4性能
+    'update_interval': 200,  # 增加更新間隔（毫秒）適應Pi4性能
     'theme': 'light',
 }
 
@@ -81,7 +81,7 @@ PLATFORM_CONFIG = {
     'is_raspberry_pi': os.path.exists('/proc/device-tree/model'),
     'raspberry_pi_optimizations': {
         'buffer_size': 512,        # 更小的緩衝區
-        'window_size': 256,        # 更小的窗口
+        'window_size': 512,        # 更小的窗口
         'update_interval': 750,    # 更長的更新間隔
         'chart_height': 300,       # 更小的圖表
         'max_points': 10,          # 更少的顯示點
@@ -90,7 +90,7 @@ PLATFORM_CONFIG = {
 }
 
 # 全域狀態
-USE_MOCK_DATA = True  # 暫時啟用以測試ASIC功能
+USE_MOCK_DATA = False  # 暫時啟用以測試ASIC功能
 RECORDING_STATE = {
     'is_recording': False,
     'current_group_id': None,
