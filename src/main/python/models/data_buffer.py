@@ -78,14 +78,18 @@ class EnhancedCircularBuffer:
             if i % 3 == 0:
                 self.blink_events.append((t, random.randint(50, 200)))
                 
-        # 初始化 FFT 頻帶測試數據
-        for j in range(50):
-            t = base_time - (50 - j) * 0.1  # 每0.1秒一個數據點
-            self.fft_band_history['delta'].append((t, random.uniform(0.1, 0.5)))
-            self.fft_band_history['theta'].append((t, random.uniform(0.2, 0.8)))
-            self.fft_band_history['alpha'].append((t, random.uniform(0.3, 1.2)))
-            self.fft_band_history['beta'].append((t, random.uniform(0.1, 0.6)))
-            self.fft_band_history['gamma'].append((t, random.uniform(0.05, 0.3)))
+        # 初始化 FFT 頻帶測試數據 - 增加數據點密度以創造流動效果
+        for j in range(100):
+            t = base_time - (100 - j) * 0.05  # 每0.05秒一個數據點，增加數據密度
+            # 使用正弦波來模擬真實的波動效果，而非隨機數據
+            phase_offset = j * 0.1  # 為每個時間點添加相位偏移
+            
+            # 為每個頻帶創建特定的波動模式
+            self.fft_band_history['delta'].append((t, 0.3 + 0.2 * np.sin(phase_offset * 0.5) + 0.05 * random.random()))
+            self.fft_band_history['theta'].append((t, 0.5 + 0.3 * np.sin(phase_offset * 0.8) + 0.1 * random.random()))
+            self.fft_band_history['alpha'].append((t, 0.7 + 0.5 * np.sin(phase_offset * 1.2) + 0.1 * random.random()))
+            self.fft_band_history['beta'].append((t, 0.35 + 0.25 * np.sin(phase_offset * 1.5) + 0.05 * random.random()))
+            self.fft_band_history['gamma'].append((t, 0.15 + 0.15 * np.sin(phase_offset * 2.0) + 0.03 * random.random()))
 
     def append(self, value: float, timestamp: float):
         """新增原始資料"""

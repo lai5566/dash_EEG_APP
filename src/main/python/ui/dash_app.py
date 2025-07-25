@@ -499,97 +499,118 @@ class EEGDashboardApp:
             Input("interval", "n_intervals")
         )
         def update_fft_bands_main(n):
-            """更新FFT頻譜視覺化 (瀑布圖/頻譜圖流動效果)"""
+            """更新FFT頻帶視覺化 (分屏波形圖，流動風景效果)"""
             start_time = time.time()
 
             try:
-                # 從數據緩衝區獲取完整頻譜歷史數據
-                spectral_data = self.data_buffer.get_spectral_data()
-                spectral_history = spectral_data['spectral_history']
+                # 從數據緩衝區獲取 FFT 頻帶歷史數據
+                fft_data = self.data_buffer.get_fft_band_data()
+                band_history = fft_data['band_history']
 
-                if not spectral_history or len(spectral_history) < 2:
-                    # 如果沒有足夠的頻譜數據，顯示提示信息
-                    fig = go.Figure()
-                    fig.add_annotation(
-                        text="Collecting spectral data...<br>Please wait for FFT analysis",
-                        showarrow=False, x=0.5, y=0.5,
-                        xref="paper", yref="paper",
-                        font=dict(size=16, color="blue")
-                    )
-                    fig.update_layout(
-                        title="FFT Spectrogram (Moving Landscape)",
-                        height=UI_CONFIG['chart_height'],
-                        margin=dict(l=40, r=15, t=40, b=60),
-                        plot_bgcolor='white'
-                    )
-                    return fig
-
-                # 構建時間-頻率矩陣用於瀑布圖
-                times = []
-                freq_matrix = []
-                power_matrix = []
-                
-                # 取最近的頻譜數據點
-                recent_history = list(spectral_history)[-min(40, len(spectral_history)):]
-                
-                for timestamp, freqs, powers in recent_history:
-                    if len(freqs) > 0 and len(powers) > 0:
-                        times.append(timestamp)
-                        if len(freq_matrix) == 0:
-                            # 第一次設定頻率軸
-                            freq_matrix = freqs
-                        power_matrix.append(powers)
-
-                if len(power_matrix) == 0:
-                    # 沒有有效數據
-                    fig = go.Figure()
-                    fig.add_annotation(
-                        text="No valid spectral data available",
-                        showarrow=False, x=0.5, y=0.5,
-                        xref="paper", yref="paper"
-                    )
-                    return fig
-
-                # 轉換為numpy陣列以便處理
-                power_matrix = np.array(power_matrix)
-                freq_matrix = np.array(freq_matrix)
-                
-                # 計算相對時間（最新的為0，往前遞減）
-                if len(times) > 0:
-                    current_time = times[-1]
-                    rel_times = [(t - current_time) for t in times]
-                else:
-                    rel_times = list(range(-len(power_matrix), 0))
-
-                # 創建瀑布圖/頻譜圖
-                fig = go.Figure()
-
-                # 使用熱力圖顯示頻譜
-                fig.add_trace(go.Heatmap(
-                    z=power_matrix.T,  # 轉置讓頻率在y軸，時間在x軸
-                    x=rel_times,
-                    y=freq_matrix,
-                    colorscale='Viridis',  # 使用Viridis色彩映射
-                    colorbar=dict(
-                        title="Power (dB)",
-                        titleside="right"
-                    ),
-                    hovertemplate='Time: %{x:.2f}s<br>Frequency: %{y:.1f}Hz<br>Power: %{z:.1f}dB<extra></extra>'
-                ))
-
-                # 設定版面配置
-                fig.update_layout(
-                    title="EEG FFT Spectrogram - Moving Landscape View",
-                    xaxis_title="Time (s, relative to current)",
-                    yaxis_title="Frequency (Hz)",
-                    height=UI_CONFIG['chart_height'],
-                    margin=dict(l=50, r=15, t=40, b=60),
-                    plot_bgcolor='white'
+                # 建立多個子圖的折線圖
+                band_names = list(self.bands.keys())
+                fig = make_subplots(
+                    rows=len(band_names),
+                    cols=1,
+                    shared_xaxes=True,
+                    subplot_titles=band_names,
+                    vertical_spacing=0.05
                 )
 
-                # 設定坐標軸範圍
-                fig.update_xaxes(range=[min(rel_times) if rel_times else -20, 0])
-                fig.update_yaxes(range=[1, 50])  # EEG的主要頻率範圍
+                # 為每個頻帶繪製流動的功率值曲線
+                for i, (band_name, band_color) in enumerate(zip(band_names, self.band_colors.values()), start=1):
+                    band_key = band_name.split(' ')[0].lower()
+                    
+                    if band_key in band_history and len(band_history[band_key]) > 0:
+                        # 取得該頻帶的時間序列數據
+                        history = band_history[band_key]
+                        if history:
+                            times, powers = zip(*history)
+                            
+                            # 計算相對時間（最新的點為0，往前遞減） - 關鍵修復
+                            current_time = times[-1] if times else 0
+                            rel_times = [(t - current_time) for t in times]
+                            
+                            # 確保時間軸是按時間順序排列的，創建流動效果
+                            # 使用等間距的時間點來避免轉折集中的問題
+                            if len(rel_times) > 1:
+                                # 創建平滑的時間序列，確保數據點均勻分佈
+                                time_range = rel_times[0] - rel_times[-1]  # 總時間範圍
+                                smooth_times = np.linspace(rel_times[0], rel_times[-1], len(rel_times))
+                                
+                                # 對功率數據進行插值以創建平滑的流動效果
+                                from scipy.interpolate import interp1d
+                                if len(powers) > 1:
+                                    # 創建插值函數
+                                    interp_func = interp1d(rel_times, powers, kind='linear', 
+                                                         bounds_error=False, fill_value='extrapolate')
+                                    smooth_powers = interp_func(smooth_times)
+                                else:
+                                    smooth_powers = powers
+                                    smooth_times = rel_times
+                            else:
+                                smooth_times = rel_times
+                                smooth_powers = powers
+                            
+                            # 將功率值轉換為 μV² 單位並進行縮放以便顯示
+                            powers_scaled = [p * 1000000 for p in smooth_powers]
+                            
+                            fig.add_trace(
+                                go.Scatter(
+                                    x=smooth_times,
+                                    y=powers_scaled,
+                                    mode="lines",
+                                    line=dict(color=band_color, width=2),
+                                    showlegend=False,
+                                    name=band_name,
+                                    connectgaps=True  # 連接數據點避免斷裂
+                                ),
+                                row=i, col=1
+                            )
+                        else:
+                            # 沒有數據時顯示零線
+                            fig.add_trace(
+                                go.Scatter(
+                                    x=[-10, 0],
+                                    y=[0, 0],
+                                    mode="lines",
+                                    line=dict(color="gray", width=1, dash="dash"),
+                                    showlegend=False
+                                ),
+                                row=i, col=1
+                            )
+                    else:
+                        # 沒有該頻帶數據時顯示零線
+                        fig.add_trace(
+                            go.Scatter(
+                                x=[-10, 0],
+                                y=[0, 0],
+                                mode="lines",
+                                line=dict(color="gray", width=1, dash="dash"),
+                                showlegend=False
+                            ),
+                            row=i, col=1
+                        )
+
+                fig.update_layout(
+                    title="FFT Band Power Flowing Waveforms (Moving Landscape)",
+                    height=UI_CONFIG['chart_height'],
+                    margin=dict(l=40, r=15, t=40, b=60),
+                    plot_bgcolor='white',
+                    showlegend=False
+                )
+
+                # 更新x軸設定 - 顯示相對時間，負值表示過去
+                fig.update_xaxes(
+                    title_text="Time (s, relative to current)", 
+                    row=len(band_names), 
+                    col=1,
+                    range=[-10, 0]  # 顯示過去10秒的數據
+                )
+                
+                # 設定y軸標籤
+                for i in range(1, len(band_names) + 1):
+                    fig.update_yaxes(title_text="Power (μV²)", row=i, col=1)
 
                 # 更新效能監控器
                 render_time = time.time() - start_time
@@ -602,7 +623,7 @@ class EEGDashboardApp:
             except Exception as e:
                 logger.error(f"Error in update_fft_bands_main: {e}")
                 return go.Figure().add_annotation(
-                    text=f"FFT Spectrogram error: {str(e)}",
+                    text=f"FFT Band waveform error: {str(e)}",
                     showarrow=False, x=0.5, y=0.5,
                     xref="paper", yref="paper"
                 )
