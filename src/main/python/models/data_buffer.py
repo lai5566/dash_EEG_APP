@@ -6,6 +6,10 @@ import numpy as np
 from collections import deque
 from typing import Tuple, List, Dict
 import random
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
+from app_config import USE_MOCK_DATA
 
 
 class EnhancedCircularBuffer:
@@ -63,8 +67,9 @@ class EnhancedCircularBuffer:
         self.current_light = 0
         self.sensor_history = deque(maxlen=50)
 
-        # 初始化測試用的假資料
-        self._init_fake_data()
+        # 只有在啟用模擬資料時才初始化假資料
+        if USE_MOCK_DATA:
+            self._init_fake_data()
 
     def _init_fake_data(self):
         """初始化測試用的假資料"""
@@ -167,10 +172,14 @@ class EnhancedCircularBuffer:
         """取得原始資料"""
         with self.lock:
             if self.count == 0:
-                # 產生測試用的假資料
-                t = np.linspace(0, 2, self.size)
-                fake_data = np.sin(2 * np.pi * 2 * t) + 0.5 * np.sin(2 * np.pi * 10 * t) + 0.1 * np.random.randn(self.size)
-                return fake_data, t
+                if USE_MOCK_DATA:
+                    # 產生測試用的假資料
+                    t = np.linspace(0, 2, self.size)
+                    fake_data = np.sin(2 * np.pi * 2 * t) + 0.5 * np.sin(2 * np.pi * 10 * t) + 0.1 * np.random.randn(self.size)
+                    return fake_data, t
+                else:
+                    # 無模擬資料時返回空陣列
+                    return np.array([]), np.array([])
 
             if self.count < self.size:
                 return self.data[:self.count].copy(), self.timestamps[:self.count].copy()
