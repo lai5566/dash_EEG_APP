@@ -18,6 +18,9 @@ import numpy as np
 import psutil
 
 from core.eeg_processor import RealTimeEEGProcessor
+# 導入USE_MOCK_DATA配置
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
+from app_config import USE_MOCK_DATA
 from models.data_buffer import EnhancedCircularBuffer
 from services.database_service import EnhancedDatabaseWriter
 from services.mqtt_client import MQTTSensorClient
@@ -507,6 +510,17 @@ class EEGDashboardApp:
                 fft_data = self.data_buffer.get_fft_band_data()
                 band_history = fft_data['band_history']
 
+                # 如果沒有啟用模擬數據且沒有真實數據，顯示提示訊息
+                if not USE_MOCK_DATA:
+                    has_data = any(len(history) > 0 for history in band_history.values())
+                    if not has_data:
+                        return go.Figure().add_annotation(
+                            text="No EEG data available. Mock data is disabled.<br>Connect EEG device to view real-time FFT analysis.",
+                            showarrow=False, x=0.5, y=0.5,
+                            xref="paper", yref="paper",
+                            font=dict(size=16, color="gray")
+                        )
+
                 # 建立多個子圖的折線圖
                 band_names = list(self.bands.keys())
                 fig = make_subplots(
@@ -553,7 +567,21 @@ class EEGDashboardApp:
                                 row=i, col=1
                             )
                         else:
-                            # 沒有數據時顯示零線
+                            # 沒有數據時，只有在啟用模擬資料時才顯示零線
+                            if USE_MOCK_DATA:
+                                fig.add_trace(
+                                    go.Scatter(
+                                        x=[-10, 0],
+                                        y=[0, 0],
+                                        mode="lines",
+                                        line=dict(color="gray", width=1, dash="dash"),
+                                        showlegend=False
+                                    ),
+                                    row=i, col=1
+                                )
+                    else:
+                        # 沒有該頻帶數據時，只有在啟用模擬資料時才顯示零線
+                        if USE_MOCK_DATA:
                             fig.add_trace(
                                 go.Scatter(
                                     x=[-10, 0],
@@ -564,18 +592,6 @@ class EEGDashboardApp:
                                 ),
                                 row=i, col=1
                             )
-                    else:
-                        # 沒有該頻帶數據時顯示零線
-                        fig.add_trace(
-                            go.Scatter(
-                                x=[-10, 0],
-                                y=[0, 0],
-                                mode="lines",
-                                line=dict(color="gray", width=1, dash="dash"),
-                                showlegend=False
-                            ),
-                            row=i, col=1
-                        )
 
                 fig.update_layout(
                     title="FFT Band Power Flowing Waveforms (Moving Landscape)",
