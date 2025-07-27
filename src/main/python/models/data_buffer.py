@@ -78,11 +78,11 @@ class EnhancedCircularBuffer:
             if i % 3 == 0:
                 self.blink_events.append((t, random.randint(50, 200)))
                 
-        # 初始化 FFT 頻帶測試數據 - 增加數據點密度以創造流動效果
+        # 初始化 FFT 頻帶測試數據 - 創建10秒時間窗口以匹配顯示範圍
         for j in range(100):
-            t = base_time - (100 - j) * 0.05  # 每0.05秒一個數據點，增加數據密度
+            t = base_time - (100 - j) * 0.1  # 每0.1秒一個數據點，總共10秒時間窗口
             # 使用正弦波來模擬真實的波動效果，而非隨機數據
-            phase_offset = j * 0.1  # 為每個時間點添加相位偏移
+            phase_offset = j * 0.05  # 調整相位偏移以適應新的時間窗口
             
             # 為每個頻帶創建特定的波動模式
             self.fft_band_history['delta'].append((t, 0.3 + 0.2 * np.sin(phase_offset * 0.5) + 0.05 * random.random()))

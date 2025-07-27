@@ -517,6 +517,9 @@ class EEGDashboardApp:
                     vertical_spacing=0.05
                 )
 
+                # 收集所有時間數據以計算動態範圍
+                all_rel_times = []
+
                 # 為每個頻帶繪製流動的功率值曲線
                 for i, (band_name, band_color) in enumerate(zip(band_names, self.band_colors.values()), start=1):
                     band_key = band_name.split(' ')[0].lower()
@@ -527,37 +530,19 @@ class EEGDashboardApp:
                         if history:
                             times, powers = zip(*history)
                             
-                            # 計算相對時間（最新的點為0，往前遞減） - 關鍵修復
+                            # 計算相對時間（最新的點為0，往前遞減）
                             current_time = times[-1] if times else 0
                             rel_times = [(t - current_time) for t in times]
                             
-                            # 確保時間軸是按時間順序排列的，創建流動效果
-                            # 使用等間距的時間點來避免轉折集中的問題
-                            if len(rel_times) > 1:
-                                # 創建平滑的時間序列，確保數據點均勻分佈
-                                time_range = rel_times[0] - rel_times[-1]  # 總時間範圍
-                                smooth_times = np.linspace(rel_times[0], rel_times[-1], len(rel_times))
-                                
-                                # 對功率數據進行插值以創建平滑的流動效果
-                                from scipy.interpolate import interp1d
-                                if len(powers) > 1:
-                                    # 創建插值函數
-                                    interp_func = interp1d(rel_times, powers, kind='linear', 
-                                                         bounds_error=False, fill_value='extrapolate')
-                                    smooth_powers = interp_func(smooth_times)
-                                else:
-                                    smooth_powers = powers
-                                    smooth_times = rel_times
-                            else:
-                                smooth_times = rel_times
-                                smooth_powers = powers
+                            # 收集時間數據用於動態範圍計算
+                            all_rel_times.extend(rel_times)
                             
                             # 將功率值轉換為 μV² 單位並進行縮放以便顯示
-                            powers_scaled = [p * 1000000 for p in smooth_powers]
+                            powers_scaled = [p * 1000000 for p in powers]
                             
                             fig.add_trace(
                                 go.Scatter(
-                                    x=smooth_times,
+                                    x=rel_times,
                                     y=powers_scaled,
                                     mode="lines",
                                     line=dict(color=band_color, width=2),
@@ -600,12 +585,24 @@ class EEGDashboardApp:
                     showlegend=False
                 )
 
+                # 計算動態x軸範圍
+                if all_rel_times:
+                    min_time = min(all_rel_times)
+                    max_time = max(all_rel_times)
+                    # 添加一些邊距以確保數據點不會觸及邊界
+                    time_range = max_time - min_time
+                    padding = time_range * 0.05 if time_range > 0 else 0.5
+                    x_range = [min_time - padding, max_time + padding]
+                else:
+                    # 默認範圍
+                    x_range = [-10, 0]
+
                 # 更新x軸設定 - 顯示相對時間，負值表示過去
                 fig.update_xaxes(
                     title_text="Time (s, relative to current)", 
                     row=len(band_names), 
                     col=1,
-                    range=[-10, 0]  # 顯示過去10秒的數據
+                    range=x_range
                 )
                 
                 # 設定y軸標籤
