@@ -70,6 +70,9 @@ class EnhancedCircularBuffer:
         # 只有在啟用模擬資料時才初始化假資料
         if USE_MOCK_DATA:
             self._init_fake_data()
+        else:
+            # 確保在禁用模擬數據時清空所有FFT相關數據
+            self._clear_fft_data()
 
     def _init_fake_data(self):
         """初始化測試用的假資料"""
@@ -95,6 +98,22 @@ class EnhancedCircularBuffer:
             self.fft_band_history['alpha'].append((t, 0.7 + 0.5 * np.sin(phase_offset * 1.2) + 0.1 * random.random()))
             self.fft_band_history['beta'].append((t, 0.35 + 0.25 * np.sin(phase_offset * 1.5) + 0.05 * random.random()))
             self.fft_band_history['gamma'].append((t, 0.15 + 0.15 * np.sin(phase_offset * 2.0) + 0.03 * random.random()))
+
+    def _clear_fft_data(self):
+        """清空所有FFT相關數據"""
+        with self.lock:
+            # 清空FFT頻帶歷史數據
+            for band_name in self.fft_band_history:
+                self.fft_band_history[band_name].clear()
+            
+            # 重置當前FFT頻帶值
+            for band_name in self.current_fft_bands:
+                self.current_fft_bands[band_name] = 0.0
+            
+            # 清空頻譜數據
+            self.spectral_history.clear()
+            self.current_spectrum_freqs = np.array([])
+            self.current_spectrum_powers = np.array([])
 
     def append(self, value: float, timestamp: float):
         """新增原始資料"""

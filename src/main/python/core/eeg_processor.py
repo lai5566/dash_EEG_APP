@@ -12,7 +12,7 @@ import os
 
 # 添加配置文件路徑
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
-from app_config import FFT_TEST_DATA_CONFIG
+from app_config import FFT_TEST_DATA_CONFIG, USE_MOCK_DATA
 
 # 導入Numba優化函數
 try:
@@ -134,7 +134,11 @@ class EEGProcessor:
             freqs, psd = self.compute_power_spectrum(data)
             
             if len(freqs) == 0:
-                return {band: 0.0 for band in self.frequency_bands.keys()}
+                # 只有在啟用模擬數據時才返回零功率值，否則返回空字典
+                if USE_MOCK_DATA:
+                    return {band: 0.0 for band in self.frequency_bands.keys()}
+                else:
+                    return {}
             
             band_powers = {}
             
@@ -372,7 +376,11 @@ class RealTimeEEGProcessor:
             ])
     
     def _generate_test_data(self, length: int) -> np.ndarray:
-        """生成指定長度的測試數據"""
+        """生成指定長度的測試數據（只有在啟用模擬數據時）"""
+        if not USE_MOCK_DATA:
+            # 如果禁用模擬數據，返回空數據
+            return np.array([])
+            
         duration = length / self.sample_rate
         t = np.linspace(0, duration, length)
         
@@ -411,13 +419,17 @@ class RealTimeEEGProcessor:
             return result
         except Exception as e:
             logger.error(f"Error in process_eeg_window: {e}")
-            # 返回默認結構確保圖表有數據顯示
-            return {
-                'processed_data': current_data,
-                'band_powers': {band: 0.0 for band in self.processor.frequency_bands.keys()},
-                'fft_bands': {band: np.zeros(len(current_data)) for band in self.processor.frequency_bands.keys()},
-                'spectral_features': {'spectral_centroid': 0.0, 'spectral_bandwidth': 0.0},
-                'artifacts': [],
-                'signal_quality': 50.0,
-                'timestamp': time.time()
-            }
+            # 只有在啟用模擬數據時才返回默認結構
+            if USE_MOCK_DATA:
+                return {
+                    'processed_data': current_data,
+                    'band_powers': {band: 0.0 for band in self.processor.frequency_bands.keys()},
+                    'fft_bands': {band: np.zeros(len(current_data)) for band in self.processor.frequency_bands.keys()},
+                    'spectral_features': {'spectral_centroid': 0.0, 'spectral_bandwidth': 0.0},
+                    'artifacts': [],
+                    'signal_quality': 50.0,
+                    'timestamp': time.time()
+                }
+            else:
+                # 當禁用模擬數據時返回空結構
+                return {}

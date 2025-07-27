@@ -244,8 +244,8 @@ class EEGApplication:
                     else:
                         logger.warning("Invalid serial data received")
                 
-                # 處理當前視窗
-                if self.processor:
+                # 處理當前視窗 - 只有在啟用模擬數據時才處理
+                if self.processor and USE_MOCK_DATA:
                     processed_result = self.processor.process_current_window()
                     if processed_result:
                         self._handle_processed_data(processed_result)

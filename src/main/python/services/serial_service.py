@@ -12,6 +12,7 @@ from resources.config.eeg_config import (
     SERIAL_PORT, BAUD_RATE, SYNC, POOR_SIGNAL, ATTENTION, MEDITATION, 
     BLINK, RAW_VALUE, ASIC_EEG_POWER
 )
+from resources.config.app_config import USE_MOCK_DATA
 
 
 class EnhancedSerialReader:
@@ -155,6 +156,15 @@ def enhanced_serial_worker(out_queue: multiprocessing.Queue):
 def mock_serial_worker(out_queue: multiprocessing.Queue):
     """測試用模擬序列埠工作程序"""
     sample_count = 0
+    
+    # 檢查是否啟用模擬數據
+    if not USE_MOCK_DATA:
+        print("[mock_serial_worker] USE_MOCK_DATA is False - mock serial worker will not generate data")
+        # 如果禁用模擬數據，持續運行但不產生任何數據
+        while True:
+            time.sleep(1)
+    
+    print("[mock_serial_worker] USE_MOCK_DATA is True - generating mock serial data")
     
     while True:
         try:
