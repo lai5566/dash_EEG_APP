@@ -7,6 +7,12 @@ from typing import Dict, List, Tuple, Optional, Any
 from concurrent.futures import ThreadPoolExecutor
 from scipy.signal import butter, sosfiltfilt
 import logging
+import sys
+import os
+
+# 導入USE_MOCK_DATA配置
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
+from app_config import USE_MOCK_DATA
 
 # 導入Numba優化函數
 try:
@@ -174,7 +180,11 @@ class OptimizedFilterProcessor:
             
         except Exception as e:
             logger.error(f"計算頻率帶功率錯誤: {e}")
-            return {name: 0.0 for name in self.bands.keys()}
+            # 只有在啟用模擬數據時才返回零功率值，否則返回空字典
+            if USE_MOCK_DATA:
+                return {name: 0.0 for name in self.bands.keys()}
+            else:
+                return {}
             
     def compute_relative_powers(self, data: np.ndarray) -> Dict[str, float]:
         """計算每個頻率帶的相對功率"""

@@ -359,7 +359,9 @@ class EEGApplication:
             # 處理 FFT 頻帶功率數據並存儲到緩衝區
             if 'band_powers' in processed_data:
                 band_powers = processed_data['band_powers']
-                self.eeg_buffer.add_fft_band_powers(band_powers)
+                # 只有當band_powers不為空且包含有效數據時才添加到緩衝區
+                if band_powers and any(value > 0 for value in band_powers.values()):
+                    self.eeg_buffer.add_fft_band_powers(band_powers)
             
             # 處理完整頻譜數據並存儲到緩衝區 (用於瀑布圖顯示)
             if 'spectrum_freqs' in processed_data and 'spectrum_powers' in processed_data:

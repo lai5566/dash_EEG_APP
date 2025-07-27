@@ -510,10 +510,17 @@ class EEGDashboardApp:
                 fft_data = self.data_buffer.get_fft_band_data()
                 band_history = fft_data['band_history']
 
-                # 如果沒有啟用模擬數據且沒有真實數據，顯示提示訊息
+                # 如果沒有啟用模擬數據且沒有有效數據，顯示提示訊息
                 if not USE_MOCK_DATA:
-                    has_data = any(len(history) > 0 for history in band_history.values())
-                    if not has_data:
+                    has_valid_data = False
+                    for history in band_history.values():
+                        if len(history) > 0:
+                            # 檢查是否有非零的有效數據
+                            if any(power > 0 for _, power in history):
+                                has_valid_data = True
+                                break
+                    
+                    if not has_valid_data:
                         return go.Figure().add_annotation(
                             text="No EEG data available. Mock data is disabled.<br>Connect EEG device to view real-time FFT analysis.",
                             showarrow=False, x=0.5, y=0.5,
