@@ -67,12 +67,13 @@ class EnhancedCircularBuffer:
         self.current_light = 0
         self.sensor_history = deque(maxlen=50)
 
+        # 初始化假資料的標記
+        self._has_initial_fake_data = False
+        
         # 只有在啟用模擬資料時才初始化假資料
         if USE_MOCK_DATA:
             self._init_fake_data()
-        else:
-            # 確保在禁用模擬數據時清空所有FFT相關數據
-            self._clear_fft_data()
+            self._has_initial_fake_data = True
 
     def _init_fake_data(self):
         """初始化測試用的假資料"""
@@ -99,21 +100,6 @@ class EnhancedCircularBuffer:
             self.fft_band_history['beta'].append((t, 0.35 + 0.25 * np.sin(phase_offset * 1.5) + 0.05 * random.random()))
             self.fft_band_history['gamma'].append((t, 0.15 + 0.15 * np.sin(phase_offset * 2.0) + 0.03 * random.random()))
 
-    def _clear_fft_data(self):
-        """清空所有FFT相關數據"""
-        with self.lock:
-            # 清空FFT頻帶歷史數據
-            for band_name in self.fft_band_history:
-                self.fft_band_history[band_name].clear()
-            
-            # 重置當前FFT頻帶值
-            for band_name in self.current_fft_bands:
-                self.current_fft_bands[band_name] = 0.0
-            
-            # 清空頻譜數據
-            self.spectral_history.clear()
-            self.current_spectrum_freqs = np.array([])
-            self.current_spectrum_powers = np.array([])
 
     def append(self, value: float, timestamp: float):
         """新增原始資料"""
@@ -160,6 +146,24 @@ class EnhancedCircularBuffer:
     def add_fft_band_powers(self, band_powers: Dict[str, float]):
         """新增FFT頻帶功率資料"""
         with self.lock:
+            # 當收到第一個真實數據時，清空初始假數據
+            if not USE_MOCK_DATA and self._has_initial_fake_data:
+                # 清空FFT頻帶歷史數據中的假數據
+                for band_name in self.fft_band_history:
+                    self.fft_band_history[band_name].clear()
+                
+                # 重置當前FFT頻帶值  
+                for band_name in self.current_fft_bands:
+                    self.current_fft_bands[band_name] = 0.0
+                
+                # 清空頻譜數據
+                self.spectral_history.clear()
+                self.current_spectrum_freqs = np.array([])
+                self.current_spectrum_powers = np.array([])
+                
+                # 標記假資料已清空
+                self._has_initial_fake_data = False
+            
             timestamp = time.time()
             for band_name, power in band_powers.items():
                 if band_name in self.current_fft_bands:
@@ -169,6 +173,24 @@ class EnhancedCircularBuffer:
     def add_spectral_data(self, freqs: np.ndarray, powers: np.ndarray):
         """新增完整頻譜資料用於瀑布圖顯示"""
         with self.lock:
+            # 當收到第一個真實數據時，清空初始假數據
+            if not USE_MOCK_DATA and self._has_initial_fake_data:
+                # 清空FFT頻帶歷史數據中的假數據
+                for band_name in self.fft_band_history:
+                    self.fft_band_history[band_name].clear()
+                
+                # 重置當前FFT頻帶值  
+                for band_name in self.current_fft_bands:
+                    self.current_fft_bands[band_name] = 0.0
+                
+                # 清空頻譜數據
+                self.spectral_history.clear()
+                self.current_spectrum_freqs = np.array([])
+                self.current_spectrum_powers = np.array([])
+                
+                # 標記假資料已清空
+                self._has_initial_fake_data = False
+            
             timestamp = time.time()
             
             # 更新當前頻譜資料

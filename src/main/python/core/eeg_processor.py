@@ -134,11 +134,8 @@ class EEGProcessor:
             freqs, psd = self.compute_power_spectrum(data)
             
             if len(freqs) == 0:
-                # 只有在啟用模擬數據時才返回零功率值，否則返回空字典
-                if USE_MOCK_DATA:
-                    return {band: 0.0 for band in self.frequency_bands.keys()}
-                else:
-                    return {}
+                # 如果沒有計算出頻譜數據，返回空字典
+                return {}
             
             band_powers = {}
             
@@ -162,7 +159,7 @@ class EEGProcessor:
             
         except Exception as e:
             logger.error(f"Error extracting band powers: {e}")
-            return {band: 0.0 for band in self.frequency_bands.keys()}
+            return {}
     
     def extract_fft_bands(self, data: np.ndarray) -> Dict[str, np.ndarray]:
         """提取FFT頻帶的時域信號 (用於折線圖顯示)"""
@@ -405,8 +402,12 @@ class RealTimeEEGProcessor:
         # 確保我們有足夠的數據進行處理
         if len(current_data) < 50:  # 降低最小樣本要求
             logger.warning(f"Insufficient data for processing: {len(current_data)} samples")
-            # 生成足夠的測試數據
-            current_data = self._generate_test_data(512)
+            # 只有在啟用模擬數據時才生成測試數據
+            if USE_MOCK_DATA:
+                current_data = self._generate_test_data(512)
+            else:
+                # 數據不足且未啟用模擬數據，返回空結果
+                return {}
         
         # 進行完整的EEG處理
         try:
@@ -419,17 +420,5 @@ class RealTimeEEGProcessor:
             return result
         except Exception as e:
             logger.error(f"Error in process_eeg_window: {e}")
-            # 只有在啟用模擬數據時才返回默認結構
-            if USE_MOCK_DATA:
-                return {
-                    'processed_data': current_data,
-                    'band_powers': {band: 0.0 for band in self.processor.frequency_bands.keys()},
-                    'fft_bands': {band: np.zeros(len(current_data)) for band in self.processor.frequency_bands.keys()},
-                    'spectral_features': {'spectral_centroid': 0.0, 'spectral_bandwidth': 0.0},
-                    'artifacts': [],
-                    'signal_quality': 50.0,
-                    'timestamp': time.time()
-                }
-            else:
-                # 當禁用模擬數據時返回空結構
-                return {}
+            # 返回空結構
+            return {}

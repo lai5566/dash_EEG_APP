@@ -6,6 +6,7 @@ import time
 import threading
 import multiprocessing
 import logging
+import numpy as np
 from typing import Dict, Any
 
 # 將專案根目錄加入路徑
@@ -244,8 +245,8 @@ class EEGApplication:
                     else:
                         logger.warning("Invalid serial data received")
                 
-                # 處理當前視窗 - 只有在啟用模擬數據時才處理
-                if self.processor and USE_MOCK_DATA:
+                # 處理當前視窗 - 無論模擬數據設定如何都嘗試處理
+                if self.processor:
                     processed_result = self.processor.process_current_window()
                     if processed_result:
                         self._handle_processed_data(processed_result)
@@ -359,15 +360,22 @@ class EEGApplication:
             # 處理 FFT 頻帶功率數據並存儲到緩衝區
             if 'band_powers' in processed_data:
                 band_powers = processed_data['band_powers']
-                # 只有當band_powers不為空且包含有效數據時才添加到緩衝區
-                if band_powers and any(value > 0 for value in band_powers.values()):
-                    self.eeg_buffer.add_fft_band_powers(band_powers)
+                # 基於數據可用性而非配置標誌的判斷邏輯
+                if band_powers and isinstance(band_powers, dict):
+                    # 檢查是否有實際的頻帶功率數據
+                    has_valid_data = any(isinstance(value, (int, float)) and not np.isnan(value) and not np.isinf(value) 
+                                       for value in band_powers.values()) if band_powers.values() else False
+                    
+                    if has_valid_data:
+                        self.eeg_buffer.add_fft_band_powers(band_powers)
             
             # 處理完整頻譜數據並存儲到緩衝區 (用於瀑布圖顯示)
             if 'spectrum_freqs' in processed_data and 'spectrum_powers' in processed_data:
                 spectrum_freqs = processed_data['spectrum_freqs']
                 spectrum_powers = processed_data['spectrum_powers']
-                if len(spectrum_freqs) > 0 and len(spectrum_powers) > 0:
+                # 基於數據可用性的判斷：檢查數組是否有效且包含有限值
+                if (len(spectrum_freqs) > 0 and len(spectrum_powers) > 0 and
+                    np.all(np.isfinite(spectrum_freqs)) and np.all(np.isfinite(spectrum_powers))):
                     self.eeg_buffer.add_spectral_data(spectrum_freqs, spectrum_powers)
             
             # 檢查偽影 (加入速率限制)
