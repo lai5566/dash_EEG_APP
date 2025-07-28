@@ -357,6 +357,11 @@ class RealTimeEEGProcessor:
         self.is_buffer_full = False
         self.lock = threading.Lock()
         
+        # 添加配置模式訪問 - 從內部處理器獲取
+        self.calculation_mode = self.processor.calculation_mode
+        self.frequency_bands = self.processor.frequency_bands
+        self.data_scaling = self.processor.data_scaling
+        
     def add_sample(self, sample: float):
         """將新樣本添加到循環緩衝區"""
         with self.lock:

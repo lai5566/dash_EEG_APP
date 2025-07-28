@@ -509,6 +509,12 @@ class EEGDashboardApp:
                 # 從數據緩衝區獲取 FFT 頻帶歷史數據
                 fft_data = self.data_buffer.get_fft_band_data()
                 band_history = fft_data['band_history']
+                
+                # 添加調試日誌
+                total_points = sum(len(history) for history in band_history.values())
+                logger.debug(f"FFT Band數據: {len(band_history)} 個頻帶, 總計 {total_points} 個數據點")
+                if total_points == 0:
+                    logger.warning("FFT Band歷史數據為空 - 可能導致圖表無法顯示")
 
                 # 如果沒有啟用模擬數據且沒有有效數據，顯示提示訊息
                 if not USE_MOCK_DATA:
@@ -558,14 +564,18 @@ class EEGDashboardApp:
                             # 收集時間數據用於動態範圍計算
                             all_rel_times.extend(rel_times)
                             
-                            # 根據配置應用數據縮放
-                            data_scaling = method_config['data_scaling']
-                            if current_method == 'waveform':
-                                # 波形模式：數據已在處理器中應用了縮放
+                            # 根據配置應用數據縮放 - 添加錯誤處理
+                            try:
+                                data_scaling = method_config.get('data_scaling', 1.0)
+                                if current_method == 'waveform':
+                                    # 波形模式：數據已在處理器中應用了縮放
+                                    powers_scaled = [p for p in powers]
+                                else:
+                                    # 功率模式：保持原有邏輯
+                                    powers_scaled = [p * data_scaling for p in powers]
+                            except Exception as e:
+                                logger.warning(f"數據縮放處理錯誤: {e}")
                                 powers_scaled = [p for p in powers]
-                            else:
-                                # 功率模式：保持原有邏輯
-                                powers_scaled = [p * data_scaling for p in powers]
 
                             
                             fig.add_trace(
@@ -607,11 +617,22 @@ class EEGDashboardApp:
                                 row=i, col=1
                             )
 
-                # 根據配置設定圖表標題和設定
-                current_method = FFT_CALCULATION_CONFIG['mode']
-                method_config = FFT_CALCULATION_CONFIG[f'{current_method}_method']
-                chart_title = method_config['chart_title']
-                y_axis_label = method_config['y_axis_label']
+                # 根據配置設定圖表標題和設定 - 添加錯誤處理
+                try:
+                    current_method = FFT_CALCULATION_CONFIG['mode']
+                    method_config = FFT_CALCULATION_CONFIG[f'{current_method}_method']
+                    chart_title = method_config['chart_title']
+                    y_axis_label = method_config['y_axis_label']
+                except Exception as e:
+                    logger.error(f"FFT配置訪問錯誤: {e}")
+                    # 使用默認值
+                    chart_title = "FFT Band Analysis"
+                    y_axis_label = "Power"
+                    current_method = "power"
+                    method_config = {
+                        'description': '頻帶分析',
+                        'data_scaling': 1.0
+                    }
                 
                 fig.update_layout(
                     title=f"{chart_title} (Moving Landscape - {method_config['description']})",
