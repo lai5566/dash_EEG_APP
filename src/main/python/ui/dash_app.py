@@ -20,7 +20,7 @@ import psutil
 from core.eeg_processor import RealTimeEEGProcessor
 # 導入USE_MOCK_DATA配置
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
-from app_config import USE_MOCK_DATA
+from app_config import USE_MOCK_DATA, FFT_CALCULATION_CONFIG
 from models.data_buffer import EnhancedCircularBuffer
 from services.database_service import EnhancedDatabaseWriter
 from services.mqtt_client import MQTTSensorClient
@@ -558,8 +558,15 @@ class EEGDashboardApp:
                             # 收集時間數據用於動態範圍計算
                             all_rel_times.extend(rel_times)
                             
-                            # 將功率值轉換為 μV² 單位並進行縮放以便顯示
-                            powers_scaled = [p * 1000000 for p in powers]
+                            # 根據配置應用數據縮放
+                            data_scaling = method_config['data_scaling']
+                            if current_method == 'waveform':
+                                # 波形模式：數據已在處理器中應用了縮放
+                                powers_scaled = [p for p in powers]
+                            else:
+                                # 功率模式：保持原有邏輯
+                                powers_scaled = [p * data_scaling for p in powers]
+
                             
                             fig.add_trace(
                                 go.Scatter(
@@ -600,8 +607,14 @@ class EEGDashboardApp:
                                 row=i, col=1
                             )
 
+                # 根據配置設定圖表標題和設定
+                current_method = FFT_CALCULATION_CONFIG['mode']
+                method_config = FFT_CALCULATION_CONFIG[f'{current_method}_method']
+                chart_title = method_config['chart_title']
+                y_axis_label = method_config['y_axis_label']
+                
                 fig.update_layout(
-                    title="FFT Band Power Flowing Waveforms (Moving Landscape)",
+                    title=f"{chart_title} (Moving Landscape - {method_config['description']})",
                     height=UI_CONFIG['chart_height'],
                     margin=dict(l=40, r=15, t=40, b=60),
                     plot_bgcolor='white',
@@ -628,9 +641,9 @@ class EEGDashboardApp:
                     range=x_range
                 )
                 
-                # 設定y軸標籤
+                # 設定y軸標籤 - 根據配置動態調整
                 for i in range(1, len(band_names) + 1):
-                    fig.update_yaxes(title_text="Power (μV²)", row=i, col=1)
+                    fig.update_yaxes(title_text=y_axis_label, row=i, col=1)
 
                 # 更新效能監控器
                 render_time = time.time() - start_time

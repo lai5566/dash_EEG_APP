@@ -12,7 +12,7 @@ import os
 
 # 添加配置文件路徑
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
-from app_config import FFT_TEST_DATA_CONFIG, USE_MOCK_DATA
+from app_config import FFT_TEST_DATA_CONFIG, USE_MOCK_DATA, FFT_CALCULATION_CONFIG
 
 # 導入Numba優化函數
 try:
@@ -42,14 +42,14 @@ class EEGProcessor:
         self.window_size = window_size
         self.lock = threading.Lock()
         
-        # 頻率帶 (Hz)
-        self.frequency_bands = {
-            'delta': (0.5, 4),
-            'theta': (4, 8),
-            'alpha': (8, 13),
-            'beta': (13, 30),
-            'gamma': (30, 100)
-        }
+        # 根據配置選擇計算方法和頻率帶
+        self.calculation_mode = FFT_CALCULATION_CONFIG['mode']
+        method_config = FFT_CALCULATION_CONFIG[f'{self.calculation_mode}_method']
+        self.frequency_bands = method_config['frequency_bands']
+        self.data_scaling = method_config['data_scaling']
+        
+        logger.info(f"EEG Processor initialized with {self.calculation_mode} mode")
+        logger.info(f"Frequency bands: {self.frequency_bands}")
         
         # 初始化濾波器
         self._init_filters()
@@ -164,7 +164,7 @@ class EEGProcessor:
     def extract_fft_bands(self, data: np.ndarray) -> Dict[str, np.ndarray]:
         """提取FFT頻帶的時域信號 (用於折線圖顯示)"""
         try:
-            # 計算FFT
+            # 計算FFT - 與main_old.py完全一致的方法
             fft_vals = np.fft.rfft(data)
             freqs = np.fft.rfftfreq(len(data), 1/self.sample_rate)
             
@@ -174,14 +174,13 @@ class EEGProcessor:
             band_signals = {}
             
             for band_name, (low_freq, high_freq) in self.frequency_bands.items():
-                # 創建頻率掩模
+                # 創建頻率掩模 - 與main_old.py一致
                 mask = (freqs >= low_freq) & (freqs <= high_freq)
                 
-                # 應用掩模到FFT結果
-                filtered_fft = fft_vals.copy()
-                filtered_fft[~mask] = 0
+                # 應用掩模到FFT結果 - 與main_old.py一致
+                filtered_fft = fft_vals * mask
                 
-                # 逆FFT得到時域信號
+                # 逆FFT得到時域信號 - 與main_old.py一致
                 band_signal = np.fft.irfft(filtered_fft, n=len(data))
                 band_signals[band_name] = band_signal
             
@@ -275,9 +274,25 @@ class EEGProcessor:
             # 預處理
             processed_data = self.preprocess_signal(raw_data)
             
-            # 提取特徵
-            band_powers = self.extract_band_powers(processed_data)
-            fft_bands = self.extract_fft_bands(processed_data)
+            # 根據配置選擇計算方法
+            if self.calculation_mode == 'power':
+                # 功率模式：計算頻帶功率值
+                band_powers = self.extract_band_powers(processed_data)
+                # 為了保持向後兼容，仍然計算fft_bands但不使用
+                fft_bands = self.extract_fft_bands(processed_data)
+            else:  # waveform mode
+                # 波形模式：計算頻帶濾波波形，並從中計算代表性數值
+                fft_bands = self.extract_fft_bands(processed_data)
+                # 將波形的RMS值作為功率指標，並應用縮放
+                band_powers = {}
+                for band_name, waveform in fft_bands.items():
+                    if len(waveform) > 0:
+                        # 計算RMS值並應用縮放
+                        rms_value = np.sqrt(np.mean(waveform**2)) * self.data_scaling
+                        band_powers[band_name] = float(rms_value)
+                    else:
+                        band_powers[band_name] = 0.0
+            
             spectral_features = self.calculate_spectral_features(processed_data)
             artifacts = self.detect_artifacts(processed_data)
             
@@ -296,7 +311,8 @@ class EEGProcessor:
                 'spectral_features': spectral_features,
                 'artifacts': artifacts,
                 'signal_quality': signal_quality,
-                'timestamp': time.time()
+                'timestamp': time.time(),
+                'calculation_mode': self.calculation_mode
             }
             
         except Exception as e:

@@ -23,7 +23,7 @@ from api.eeg_api import create_app
 from ui.dash_app import EEGDashboardApp
 from utils.data_utils import DataValidator, DataExporter
 from resources.config.app_config import (
-    APP_CONFIG, API_CONFIG, DATABASE_PATH, USE_MOCK_DATA, PROCESSING_CONFIG
+    APP_CONFIG, API_CONFIG, DATABASE_PATH, USE_MOCK_DATA, PROCESSING_CONFIG, FFT_CALCULATION_CONFIG
 )
 from resources.config.audio_config import AUDIO_CONFIG
 
@@ -92,6 +92,14 @@ class EEGApplication:
         """初始化應用程式組件"""
         try:
             logger.info("Initializing EEG Application...")
+            
+            # 顯示FFT計算模式配置
+            current_mode = FFT_CALCULATION_CONFIG['mode']
+            method_config = FFT_CALCULATION_CONFIG[f'{current_mode}_method']
+            logger.info(f"FFT Calculation Mode: {current_mode}")
+            logger.info(f"Description: {method_config['description']}")
+            logger.info(f"Y-axis Label: {method_config['y_axis_label']}")
+            logger.info(f"Data Scaling: {method_config['data_scaling']}")
             
             # 初始化資料緩衝區
             self.eeg_buffer = EnhancedCircularBuffer(APP_CONFIG['buffer_size'])

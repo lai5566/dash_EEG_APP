@@ -68,6 +68,37 @@ FFT_TEST_DATA_CONFIG = {
     }
 }
 
+# FFT計算方法配置
+FFT_CALCULATION_CONFIG = {
+    'mode': 'power',  # 'power' 或 'waveform'
+    'power_method': {
+        'description': '顯示頻帶功率值',
+        'frequency_bands': {
+            'delta': (0.5, 4),
+            'theta': (4, 8), 
+            'alpha': (8, 13),
+            'beta': (13, 30),
+            'gamma': (30, 100)
+        },
+        'y_axis_label': 'Power (μV²)',
+        'data_scaling': 1.0,
+        'chart_title': 'FFT Band Power Analysis'
+    },
+    'waveform_method': {
+        'description': '顯示頻帶濾波波形',
+        'frequency_bands': {
+            'delta': (0.5, 4),
+            'theta': (4, 8),
+            'alpha': (8, 12), 
+            'beta': (12, 35),
+            'gamma': (35, 50)
+        },
+        'y_axis_label': 'Voltage (mV)',
+        'data_scaling': 1000.0,  # 將V轉換為mV顯示
+        'chart_title': 'FFT Band Waveform Analysis'
+    }
+}
+
 # 資料匯出設定
 EXPORT_CONFIG = {
     'formats': ['csv', 'json', 'mat', 'edf'],

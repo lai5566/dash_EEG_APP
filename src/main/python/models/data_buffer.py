@@ -9,7 +9,7 @@ import random
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
-from app_config import USE_MOCK_DATA
+from app_config import USE_MOCK_DATA, FFT_CALCULATION_CONFIG
 
 
 class EnhancedCircularBuffer:
