@@ -6,9 +6,9 @@ import os
 APP_CONFIG = {
     'name': 'EEG Dashboard Application',
     'version': '1.0.0',
-    'buffer_size': 1024,  # 減少緩衝區大小以適應Pi4
+    'buffer_size': 512,  # 減少緩衝區大小以適應Pi4
     'sample_rate': 512,
-    'window_size': 512,   # 減少窗口大小以提高性能
+    'window_size': 256,   # 減少窗口大小以提高性能
     'max_recording_duration': 3600,  # 1小時
 }
 
@@ -16,11 +16,11 @@ APP_CONFIG = {
 API_CONFIG = {
     'host': '0.0.0.0',
     'port': 8052,
-    'debug': True,
+    'debug': False,
     'threaded': True,
-    'buffer_size': 2024,  # 與APP_CONFIG保持一致
+    'buffer_size': 512,  # 與APP_CONFIG保持一致
     'sample_rate': 512,
-    'window_size': 2024,   # 與APP_CONFIG保持一致
+    'window_size': 512,   # 與APP_CONFIG保持一致
 }
 
 # 資料庫設定
@@ -70,9 +70,11 @@ FFT_TEST_DATA_CONFIG = {
 
 # FFT計算方法配置
 FFT_CALCULATION_CONFIG = {
-    'mode': 'power',  # 'power' 或 'waveform'
+    'mode': 'power'
+            ''
+            '',  # 'power' 或 'waveform'
     'power_method': {
-        'description': '顯示頻帶功率值',
+        'description': 'Display frequency band power values',
         'frequency_bands': {
             'delta': (0.5, 4),
             'theta': (4, 8), 
@@ -80,12 +82,12 @@ FFT_CALCULATION_CONFIG = {
             'beta': (13, 30),
             'gamma': (30, 100)
         },
-        'y_axis_label': 'Power (μV²)',
+        'y_axis_label': '',#Power (μV²)
         'data_scaling': 1.0,
         'chart_title': 'FFT Band Power Analysis'
     },
     'waveform_method': {
-        'description': '顯示頻帶濾波波形',
+        'description': 'Display frequency band filtered waveforms',
         'frequency_bands': {
             'delta': (0.5, 4),
             'theta': (4, 8),
@@ -94,7 +96,7 @@ FFT_CALCULATION_CONFIG = {
             'gamma': (35, 50)
         },
         'y_axis_label': 'Voltage (mV)',
-        'data_scaling': 1000.0,  # 將V轉換為mV顯示
+        'data_scaling': 1000.0,  # Convert V to mV for display
         'chart_title': 'FFT Band Waveform Analysis'
     }
 }
@@ -121,7 +123,7 @@ PLATFORM_CONFIG = {
 }
 
 # 全域狀態
-USE_MOCK_DATA = False  # 暫時啟用以測試ASIC功能
+USE_MOCK_DATA = True  # 暫時啟用以測試ASIC功能
 RECORDING_STATE = {
     'is_recording': False,
     'current_group_id': None,

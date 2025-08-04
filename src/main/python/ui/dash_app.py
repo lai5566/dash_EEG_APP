@@ -1,4 +1,4 @@
-"""EEG儀表板的Dash網頁介面"""
+"""EEG Dashboard Dash Web Interface"""
 
 import time
 import uuid
@@ -18,7 +18,7 @@ import numpy as np
 import psutil
 
 from core.eeg_processor import RealTimeEEGProcessor
-# 導入USE_MOCK_DATA配置
+# Import USE_MOCK_DATA configuration
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
 from app_config import USE_MOCK_DATA, FFT_CALCULATION_CONFIG
 from models.data_buffer import EnhancedCircularBuffer
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 class EEGDashboardApp:
-    """EEG監控的主要Dash應用程式"""
+    """Main Dash Application for EEG Monitoring"""
 
     def __init__(self, data_buffer: EnhancedCircularBuffer,
                  db_writer: EnhancedDatabaseWriter,
@@ -48,16 +48,16 @@ class EEGDashboardApp:
         self.mqtt_client = mqtt_client
         self.audio_recorder = audio_recorder
 
-        # 初始化Dash應用程式
+        # Initialize Dash application
         self.app = dash.Dash(__name__)
 
-        # 初始化管理頁面
+        # Initialize management page
         self.management_page = ManagementPage(self.db_writer)
 
-        # 初始化滑動面板
+        # Initialize sliding panel
         self.sliding_panel = SlidingPanel(self.db_writer)
 
-        # 效能監控
+        # Performance monitoring
         self.performance_monitor = {
             'last_update_time': time.time(),
             'update_count': 0,
@@ -65,7 +65,7 @@ class EEGDashboardApp:
             'adaptive_interval': UI_CONFIG['update_interval']
         }
 
-        # EEG頻帶視覺化設定
+        # EEG frequency band visualization settings
         self.bands = {
             "Delta (0.5-4Hz)": (0.5, 4),
             "Theta (4-8Hz)": (4, 8),
@@ -84,7 +84,7 @@ class EEGDashboardApp:
         #     "Mid-Gamma (41-49.75Hz)": (41, 49.75),
         # }
 
-        # 頻帶顏色
+        # Frequency band colors
         self.band_colors = {
             "Delta (0.5-4Hz)": "#FF6B6B",
             "Theta (4-8Hz)": "#4ECDC4",
@@ -105,11 +105,11 @@ class EEGDashboardApp:
 
 
 
-        # ASIC頻帶名稱
+        # ASIC frequency band names
         self.asic_bands = ["Delta", "Theta", "Low-Alpha", "High-Alpha",
                            "Low-Beta", "High-Beta", "Low-Gamma", "Mid-Gamma"]
 
-        # 實驗狀態管理
+        # Experiment state management
         self.experiment_state = {
             'current_session_id': None,
             'current_recording_group_id': None,
@@ -120,14 +120,14 @@ class EEGDashboardApp:
             'selected_eye_state': 'open'
         }
 
-        # 設定版面配置和回呼函式
+        # Setup layout and callback functions
         self._setup_layout()
         self._setup_callbacks()
 
-        # 註冊管理頁面回調
+        # Register management page callbacks
         self.management_page.register_callbacks(self.app)
 
-        # 註冊滑動面板回調
+        # Register sliding panel callbacks
         self.sliding_panel.register_callbacks(self.app)
 
     def _setup_layout(self):
@@ -205,7 +205,7 @@ class EEGDashboardApp:
             html.Div([
                 html.Div([
                     html.Div([
-                        html.H3("FFT Band Analysis",
+                        html.H3("EEG Band Power Trend",
                                         style={'fontSize': '18px', 'fontWeight': 'bold',
                                                'marginBottom': '10px', 'color': '#555'}),
                                 dcc.Graph(id="fft-bands-main",
@@ -300,13 +300,13 @@ class EEGDashboardApp:
                 html.Div([
                     html.Div([
                         html.Div([
-                            html.H3("Experimental Control",
+                            html.H3("Session Control",
                                     style={'fontSize': '18px', 'fontWeight': 'bold',
                                            'marginBottom': '10px', 'color': '#555'}),
 
                             # 快速測試會話按鈕
                             html.Div([
-                                html.Button("⚡ 快速測試會話", id="quick-test-session-btn",
+                                html.Button("⚡ Quick Test Session", id="quick-test-session-btn",
                                             style={'width': '100%', 'padding': '12px 20px',
                                                    'fontSize': '16px', 'fontWeight': 'bold',
                                                    'backgroundColor': '#17a2b8', 'color': 'white',
@@ -314,7 +314,7 @@ class EEGDashboardApp:
                                                    'cursor': 'pointer', 'marginBottom': '15px',
                                                    'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
                                 html.Hr(style={'margin': '15px 0', 'borderColor': '#dee2e6'}),
-                                html.P("或設置完整實驗參數：",
+                                html.P("Or set complete experiment parameters:",
                                        style={'fontSize': '14px', 'color': '#6c757d', 'marginBottom': '10px',
                                               'textAlign': 'center'})
                             ]),
@@ -349,7 +349,7 @@ class EEGDashboardApp:
 
                             # 眼睛狀態選擇
                             html.Div([
-                                html.Label("眼睛狀態:",
+                                html.Label("Eye State:",
                                            style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px',
                                                   'display': 'block'}),
                                 dcc.Dropdown(
@@ -367,7 +367,7 @@ class EEGDashboardApp:
 
                             # 控制按鈕
                             html.Div([
-                                html.Button("Start Recording", id="start-experiment-btn",
+                                html.Button("Start Session", id="start-experiment-btn",
                                             style={'marginRight': '10px', 'marginBottom': '10px',
                                                    'padding': '10px 20px',
                                                    'fontSize': '14px', 'backgroundColor': '#007bff',
@@ -384,7 +384,7 @@ class EEGDashboardApp:
                                                    'fontSize': '14px', 'backgroundColor': '#dc3545',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
                                                    'cursor': 'pointer', 'width': '48%', 'disabled': True}),
-                                html.Button("Stop Experiment", id="stop-experiment-btn",
+                                html.Button("Stop Session", id="stop-experiment-btn",
                                             style={'marginBottom': '10px', 'padding': '10px 20px',
                                                    'fontSize': '14px', 'backgroundColor': '#6c757d',
                                                    'color': 'white', 'border': 'none', 'borderRadius': '4px',
@@ -400,7 +400,7 @@ class EEGDashboardApp:
                         ], style={'background': 'white', 'borderRadius': '8px',
                                   'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
                                   'padding': '15px', 'marginBottom': '15px'}),
-                    ], id="experiment-controls", style={'display': 'block'}),
+                    ], id="Session-controls", style={'display': 'block'}),
 
                 ], style={'flex': '1', 'padding': '5px', 'minWidth': '350px'}),
 
@@ -627,15 +627,14 @@ class EEGDashboardApp:
                     logger.error(f"FFT配置訪問錯誤: {e}")
                     # 使用默認值
                     chart_title = "FFT Band Analysis"
-                    y_axis_label = "Power"
+                    # y_axis_label = "Power"
                     current_method = "power"
                     method_config = {
-                        'description': '頻帶分析',
+                        'description': 'Band Analysis',
                         'data_scaling': 1.0
                     }
                 
                 fig.update_layout(
-                    title=f"{chart_title} (Moving Landscape - {method_config['description']})",
                     height=UI_CONFIG['chart_height'],
                     margin=dict(l=40, r=15, t=40, b=60),
                     plot_bgcolor='white',
@@ -937,7 +936,7 @@ class EEGDashboardApp:
                 fig.update_layout(
                     title="ASIC EEG 8 Band Power Distribution",
                     xaxis_title="Band",
-                    yaxis_title="Power Value",
+                    # yaxis_title="Power Value",
                     yaxis_range=[0, max(current_bands) * 1.1],
                     height=300,
                     margin=dict(l=30, r=15, t=30, b=30),
@@ -1008,7 +1007,7 @@ class EEGDashboardApp:
                 return html.Div([
                     html.I(className="fas fa-exclamation-triangle",
                            style={'color': '#e74c3c', 'marginRight': '8px'}),
-                    html.Span(f"感測器錯誤: {str(e)}", style={'color': '#e74c3c'})
+                    html.Span(f"Sensor error: {str(e)}", style={'color': '#e74c3c'})
                 ])
 
         # 實驗控制回調函數
@@ -1061,8 +1060,8 @@ class EEGDashboardApp:
             prevent_initial_call=True
         )
         def handle_experiment_control(start_exp_clicks, start_rec_clicks, stop_rec_clicks, stop_exp_clicks,
-                                      quick_test_clicks, n,
-                                      subject_id, ambient_sound_id, eye_state):
+                                      quick_test_clicks,n,
+                                      subject_id, ambient_sound_id, eye_state):# quick_test_clicks
             """處理實驗控制流程"""
             try:
                 ctx = callback_context
@@ -1097,11 +1096,11 @@ class EEGDashboardApp:
                                 'selected_sound': None,
                                 'selected_eye_state': "open"
                             })
-                            return f"🚀 快速測試會話已啟動 | 會話ID: {session_id} | 受試者: {test_subject_id}"
+                            return f"🚀 Quick test session started | Session ID: {session_id} | Subject: {test_subject_id}"
                         else:
-                            return "❌ 快速測試會話啟動失敗"
+                            return "❌ Quick test session failed to start"
                     else:
-                        return "⚠️ 實驗已在進行中，請先停止當前實驗"
+                        return "⚠️ Experiment already running, please stop current experiment first"
 
                 elif button_id == "start-experiment-btn" and start_exp_clicks:
                     if not subject_id:
@@ -1215,7 +1214,7 @@ class EEGDashboardApp:
         def handle_recording_control(start_clicks, stop_clicks, n):
             """處理錄音控制"""
             if not self.audio_recorder:
-                return "❌ 音頻錄製器未初始化"
+                return "❌ Audio recorder not initialized"
 
             try:
                 # 檢查音頻模組是否可用
@@ -1229,7 +1228,7 @@ class EEGDashboardApp:
                     if status['is_recording']:
                         elapsed = status['elapsed_time']
                         group_id = status['current_group_id'] or "Unknown"
-                        return f"🔴 Recording in progress... ({elapsed:.0f}秒) | Group ID: {group_id}"
+                        return f"🔴 Recording in progress... ({elapsed:.0f}s) | Group ID: {group_id}"
                     else:
                         device_info = self.audio_recorder.get_device_info()
                         if device_info.get('available', False) and 'error' not in device_info:
@@ -1246,27 +1245,27 @@ class EEGDashboardApp:
                         group_id = str(uuid.uuid4())[:8]
                         success = self.audio_recorder.start_recording(group_id)
                         if success:
-                            return f"🔴 錄音開始 | 群組ID: {group_id}"
+                            return f"🔴 Recording started | Group ID: {group_id}"
                         else:
-                            return "❌ 錄音啟動失敗 - 請檢查音頻設備"
+                            return "❌ Recording failed to start - Please check audio device"
                     else:
-                        return "⚠️ 已在錄音中"
+                        return "⚠️ Already recording"
 
                 elif button_id == "stop-recording-btn" and stop_clicks:
                     if status['is_recording']:
                         filename = self.audio_recorder.stop_recording(self.db_writer)
                         if filename:
-                            return f"✅ 錄音已停止並儲存: {os.path.basename(filename)}"
+                            return f"✅ Recording stopped and saved: {os.path.basename(filename)}"
                         else:
-                            return "⚠️ 錄音停止，但儲存失敗"
+                            return "⚠️ Recording stopped, but saving failed"
                     else:
-                        return "⚠️ 目前沒有錄音"
+                        return "⚠️ No recording currently"
 
-                return "⚪ 待機中"
+                return "⚪ On standby"
 
             except Exception as e:
                 logger.error(f"Error in handle_recording_control: {e}")
-                return f"❌ 錄音控制錯誤: {str(e)}"
+                return f"❌ Recording control error: {str(e)}"
 
         @self.app.callback(
             [Output("performance-status", "children"),

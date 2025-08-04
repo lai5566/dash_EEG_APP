@@ -29,9 +29,9 @@ class SessionHistoryPage:
                     html.H2([
                         html.I(className="fas fa-history", 
                                style={'marginRight': '10px', 'color': '#007bff'}),
-                        "Session 歷史記錄"
+                        "Session History"
                     ], style={'color': '#2c3e50', 'marginBottom': '10px', 'fontSize': '24px'}),
-                    html.P("瀏覽和管理所有實驗會話記錄，支援篩選和 CSV 匯出功能",
+                    html.P("Browse and manage all experiment session records with filtering and CSV export functionality",
                            style={'color': '#6c757d', 'fontSize': '14px', 'marginBottom': '20px'})
                 ], style={
                     'background': 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
@@ -46,19 +46,19 @@ class SessionHistoryPage:
                     html.H4([
                         html.I(className="fas fa-filter", 
                                style={'marginRight': '8px', 'color': '#28a745'}),
-                        "篩選控制"
+                        "Filter Controls"
                     ], style={'fontSize': '18px', 'color': '#495057', 'marginBottom': '15px'}),
                     
                     # 篩選控制項
                     html.Div([
                         # 受試者篩選
                         html.Div([
-                            html.Label("受試者 ID:", 
+                            html.Label("Subject ID:", 
                                       style={'fontWeight': 'bold', 'marginBottom': '5px', 'display': 'block'}),
                             dcc.Input(
                                 id="history-subject-filter",
                                 type="text",
-                                placeholder="輸入受試者 ID 進行篩選",
+                                placeholder="Enter Subject ID to filter",
                                 style={
                                     'width': '100%', 'padding': '8px 12px', 
                                     'border': '1px solid #ced4da', 'borderRadius': '4px',
@@ -69,15 +69,15 @@ class SessionHistoryPage:
                         
                         # 數量限制
                         html.Div([
-                            html.Label("顯示數量:", 
+                            html.Label("Display Count:", 
                                       style={'fontWeight': 'bold', 'marginBottom': '5px', 'display': 'block'}),
                             dcc.Dropdown(
                                 id="history-limit-dropdown",
                                 options=[
-                                    {'label': '20 筆', 'value': 20},
-                                    {'label': '50 筆', 'value': 50},
-                                    {'label': '100 筆', 'value': 100},
-                                    {'label': '200 筆', 'value': 200}
+                                    {'label': '20 records', 'value': 20},
+                                    {'label': '50 records', 'value': 50},
+                                    {'label': '100 records', 'value': 100},
+                                    {'label': '200 records', 'value': 200}
                                 ],
                                 value=50,
                                 style={'fontSize': '14px'}
@@ -88,7 +88,7 @@ class SessionHistoryPage:
                         html.Div([
                             html.Button([
                                 html.I(className="fas fa-sync-alt", style={'marginRight': '5px'}),
-                                "刷新"
+                                "Refresh"
                             ], id="history-refresh-btn",
                                style={
                                    'backgroundColor': '#17a2b8', 'color': 'white',
@@ -113,7 +113,7 @@ class SessionHistoryPage:
                     html.H4([
                         html.I(className="fas fa-list", 
                                style={'marginRight': '8px', 'color': '#dc3545'}),
-                        "Session 清單"
+                        "Session List"
                     ], style={'fontSize': '18px', 'color': '#495057', 'marginBottom': '15px'}),
                     
                     # 載入指示器
@@ -150,8 +150,8 @@ class SessionHistoryPage:
                 html.Div([
                     html.I(className="fas fa-info-circle", 
                            style={'fontSize': '48px', 'color': '#6c757d', 'marginBottom': '15px'}),
-                    html.H5("無資料", style={'color': '#6c757d', 'marginBottom': '10px'}),
-                    html.P("目前沒有找到符合條件的 Session 記錄", 
+                    html.H5("No Data", style={'color': '#6c757d', 'marginBottom': '10px'}),
+                    html.P("No Session records found matching the criteria", 
                            style={'color': '#868e96', 'fontSize': '14px'})
                 ], style={
                     'textAlign': 'center', 'padding': '40px',
@@ -168,12 +168,12 @@ class SessionHistoryPage:
             duration = f"{session['duration']:.1f}s" if session['duration'] else 'N/A'
             
             # 狀態指示器
-            if session['status'] == '已完成':
-                status_badge = html.Span("已完成", 
+            if session['status'] == 'completed':
+                status_badge = html.Span("Completed", 
                     style={'background': '#28a745', 'color': 'white', 'padding': '4px 8px',
                            'borderRadius': '12px', 'fontSize': '12px', 'fontWeight': 'bold'})
             else:
-                status_badge = html.Span("進行中", 
+                status_badge = html.Span("In Progress", 
                     style={'background': '#ffc107', 'color': '#212529', 'padding': '4px 8px',
                            'borderRadius': '12px', 'fontSize': '12px', 'fontWeight': 'bold'})
             
@@ -210,20 +210,20 @@ class SessionHistoryPage:
                 html.Tr([
                     html.Th("Session ID", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
                                                 'fontWeight': 'bold', 'fontSize': '14px', 'color': '#495057'}),
-                    html.Th("受試者", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
+                    html.Th("Subject", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
                                            'fontWeight': 'bold', 'fontSize': '14px', 'color': '#495057'}),
-                    html.Th("開始時間", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
+                    html.Th("Start Time", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
                                             'fontWeight': 'bold', 'fontSize': '14px', 'color': '#495057'}),
-                    html.Th("持續時間", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
+                    html.Th("Duration", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
                                             'fontWeight': 'bold', 'fontSize': '14px', 'color': '#495057',
                                             'textAlign': 'right'}),
-                    html.Th("眼睛狀態", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
+                    html.Th("Eye State", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
                                             'fontWeight': 'bold', 'fontSize': '14px', 'color': '#495057'}),
-                    html.Th("狀態", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
+                    html.Th("Status", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
                                          'fontWeight': 'bold', 'fontSize': '14px', 'color': '#495057'}),
-                    html.Th("研究者", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
+                    html.Th("Researcher", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
                                           'fontWeight': 'bold', 'fontSize': '14px', 'color': '#495057'}),
-                    html.Th("操作", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
+                    html.Th("Actions", style={'padding': '12px 8px', 'backgroundColor': '#f8f9fa',
                                          'fontWeight': 'bold', 'fontSize': '14px', 'color': '#495057',
                                          'textAlign': 'center'})
                 ])
@@ -242,7 +242,7 @@ class SessionHistoryPage:
             session_data = self.db_writer.get_session_data_for_export(session_id)
             
             if not session_data:
-                return None, f"找不到 Session: {session_id}"
+                return None, f"Session not found: {session_id}"
             
             # 準備 CSV 數據
             csv_rows = []
@@ -314,7 +314,7 @@ class SessionHistoryPage:
             
         except Exception as e:
             logger.error(f"Error exporting session to CSV: {e}")
-            return None, f"匯出錯誤: {str(e)}"
+            return None, f"Export error: {str(e)}"
     
     def register_callbacks(self, app: dash.Dash):
         """註冊頁面回調函數"""
@@ -342,9 +342,9 @@ class SessionHistoryPage:
                 table = self.create_session_table(sessions)
                 
                 # 狀態信息
-                status_text = f"顯示 {len(sessions)} 筆記錄"
+                status_text = f"Showing {len(sessions)} records"
                 if subject_filter:
-                    status_text += f" (篩選: {subject_filter})"
+                    status_text += f" (filtered: {subject_filter})"
                 
                 return table, status_text, sessions
                 
@@ -353,10 +353,10 @@ class SessionHistoryPage:
                 error_msg = html.Div([
                     html.I(className="fas fa-exclamation-triangle", 
                            style={'color': '#dc3545', 'marginRight': '8px'}),
-                    f"載入錯誤: {str(e)}"
+                    f"Loading error: {str(e)}"
                 ], style={'color': '#dc3545', 'fontSize': '14px'})
                 
-                return error_msg, "載入失敗", []
+                return error_msg, "Loading failed", []
         
         # CSV 下載處理
         @app.callback(
