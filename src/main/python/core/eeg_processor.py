@@ -12,7 +12,7 @@ import os
 
 # 添加配置文件路徑
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'config'))
-from app_config import FFT_TEST_DATA_CONFIG, USE_MOCK_DATA, FFT_CALCULATION_CONFIG
+from app_config import FFT_TEST_DATA_CONFIG, USE_MOCK_DATA, FFT_CALCULATION_CONFIG, PREPROCESSING_CONFIG
 
 # 導入Numba優化函數
 try:
@@ -48,64 +48,162 @@ class EEGProcessor:
         self.frequency_bands = method_config['frequency_bands']
         self.data_scaling = method_config['data_scaling']
         
+        # 載入預處理配置
+        self.preprocessing_mode = PREPROCESSING_CONFIG['mode']
+        self.preprocessing_config = PREPROCESSING_CONFIG[self.preprocessing_mode]
+        
         logger.info(f"EEG Processor initialized with {self.calculation_mode} mode")
+        logger.info(f"Preprocessing mode: {self.preprocessing_mode}")
         logger.info(f"Frequency bands: {self.frequency_bands}")
         
-        # 初始化濾波器
-        self._init_filters()
+        # 根據配置初始化濾波器 (延遲初始化)
+        self.filters_initialized = False
+        self._filters = {}
+        
+        # 如果需要任何濾波器，立即初始化
+        if (self.preprocessing_config.get('dc_removal', False) or 
+            self.preprocessing_config.get('powerline_notch', False) or 
+            self.preprocessing_config.get('bandpass_filter', False)):
+            self._init_filters()
         
     def _init_filters(self):
-        """初始化數位濾波器"""
-        # 巴特沃茲帶通濾波器 (1-50 Hz)
-        self.sos_bandpass = signal.butter(4, [1, 50], 
-                                        btype='band', 
-                                        fs=self.sample_rate, 
-                                        output='sos')
+        """根據配置初始化所需的數位濾波器"""
+        if self.filters_initialized:
+            return
+            
+        filter_params = PREPROCESSING_CONFIG['filter_params']
+        butter_order = filter_params['butter_order']
+        notch_order = filter_params['notch_order']
         
-        # 50Hz/60Hz電力線干擾陷波濾波器
-        self.sos_notch_50 = signal.butter(2, [49, 51], 
-                                        btype='bandstop', 
-                                        fs=self.sample_rate, 
-                                        output='sos')
+        # DC移除 (高通濾波器)
+        if self.preprocessing_config.get('dc_removal', False):
+            cutoff = self.preprocessing_config.get('highpass_cutoff', 0.5)
+            self._filters['highpass'] = signal.butter(
+                butter_order, cutoff, 
+                btype='high', 
+                fs=self.sample_rate, 
+                output='sos'
+            )
+            logger.info(f"Initialized highpass filter: {cutoff} Hz")
         
-        self.sos_notch_60 = signal.butter(2, [59, 61], 
-                                        btype='bandstop', 
-                                        fs=self.sample_rate, 
-                                        output='sos')
+        # 帶通濾波器
+        if self.preprocessing_config.get('bandpass_filter', False):
+            low = self.preprocessing_config.get('bandpass_low', 0.5)
+            high = self.preprocessing_config.get('bandpass_high', 50.0)
+            self._filters['bandpass'] = signal.butter(
+                butter_order, [low, high], 
+                btype='band', 
+                fs=self.sample_rate, 
+                output='sos'
+            )
+            logger.info(f"Initialized bandpass filter: {low}-{high} Hz")
+        
+        # 電力線陷波濾波器 
+        if self.preprocessing_config.get('powerline_notch', False):
+            # 50Hz陷波
+            self._filters['notch_50'] = signal.butter(
+                notch_order, [49, 51], 
+                btype='bandstop', 
+                fs=self.sample_rate, 
+                output='sos'
+            )
+            # 60Hz陷波
+            self._filters['notch_60'] = signal.butter(
+                notch_order, [59, 61], 
+                btype='bandstop', 
+                fs=self.sample_rate, 
+                output='sos'
+            )
+            logger.info("Initialized powerline notch filters: 50Hz, 60Hz")
+        
+        self.filters_initialized = True
+        logger.info(f"Filter initialization complete. Active filters: {list(self._filters.keys())}")
         
     def preprocess_signal(self, raw_data: np.ndarray) -> np.ndarray:
-        """預處理原始EEG信號"""
+        """根據配置進行最小化的信號預處理，保持更接近原始EEG信號"""
         with self.lock:
             try:
-                # 套用帶通濾波器
-                filtered = signal.sosfilt(self.sos_bandpass, raw_data)
+                processed_data = raw_data.copy()
+                applied_filters = []
                 
-                # 套用陷波濾波器
-                filtered = signal.sosfilt(self.sos_notch_50, filtered)
-                filtered = signal.sosfilt(self.sos_notch_60, filtered)
+                # 1. DC移除 (高通濾波) - 推薦保留以移除DC偏移
+                if 'highpass' in self._filters:
+                    processed_data = signal.sosfilt(self._filters['highpass'], processed_data)
+                    applied_filters.append('highpass')
                 
-                # 正規化
-                filtered = (filtered - np.mean(filtered)) / np.std(filtered)
+                # 2. 帶通濾波 - 可選，會改變信號特性
+                if 'bandpass' in self._filters:
+                    processed_data = signal.sosfilt(self._filters['bandpass'], processed_data)
+                    applied_filters.append('bandpass')
                 
-                return filtered
+                # 3. 電力線干擾陷波濾波 - 可選，在環境乾淨時可關閉
+                if 'notch_50' in self._filters:
+                    processed_data = signal.sosfilt(self._filters['notch_50'], processed_data)
+                    applied_filters.append('notch_50')
+                    
+                if 'notch_60' in self._filters:
+                    processed_data = signal.sosfilt(self._filters['notch_60'], processed_data)
+                    applied_filters.append('notch_60')
+                
+                # 4. 標準化 - 只在完整模式下啟用，會失去絕對電壓信息
+                if self.preprocessing_config.get('normalization', False):
+                    if len(processed_data) > 1:  # 避免除零錯誤
+                        std_val = np.std(processed_data)
+                        if std_val > 0:  # 確保標準差不為零
+                            processed_data = (processed_data - np.mean(processed_data)) / std_val
+                            applied_filters.append('normalization')
+                        else:
+                            logger.warning("Signal standard deviation is zero, skipping normalization")
+                
+                # 記錄應用的預處理步驟
+                if applied_filters:
+                    logger.debug(f"Applied preprocessing filters: {applied_filters}")
+                else:
+                    logger.debug("No preprocessing applied - using raw signal")
+                
+                return processed_data
                 
             except Exception as e:
                 logger.error(f"Error in preprocessing: {e}")
+                logger.info("Returning raw signal due to preprocessing error")
                 return raw_data
     
     def compute_power_spectrum(self, data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """使用FFT計算功率譜 - Numba優化版本"""
+        """使用FFT計算功率譜 - 帶窗函數能量補償的Numba優化版本"""
         try:
+            # 獲取窗函數設定
+            windowing_config = PREPROCESSING_CONFIG['windowing']
+            window_type = windowing_config.get('type', 'hanning')
+            compensation_enabled = self.preprocessing_config.get('window_compensation', True)
+            
             if USE_NUMBA and NUMBA_AVAILABLE:
-                # 使用Numba優化的窗函數
-                windowed = data * hanning_window_numba(len(data))
+                # 選擇窗函數
+                if window_type == 'hanning':
+                    windowed = data * hanning_window_numba(len(data))
+                    compensation_factor = windowing_config.get('compensation_factor', 2.0) if compensation_enabled else 1.0
+                else:
+                    # 回退到numpy窗函數
+                    if window_type == 'hamming':
+                        window = np.hamming(len(data))
+                        compensation_factor = 1.85 if compensation_enabled else 1.0
+                    elif window_type == 'blackman':
+                        window = np.blackman(len(data))
+                        compensation_factor = 2.8 if compensation_enabled else 1.0
+                    elif window_type == 'rectangular':
+                        window = np.ones(len(data))
+                        compensation_factor = 1.0  # 矩形窗不需要補償
+                    else:
+                        window = np.hanning(len(data))
+                        compensation_factor = 2.0 if compensation_enabled else 1.0
+                    
+                    windowed = data * window
                 
-                # 計算FFT (仍使用SciPy，因為它已經高度優化)
+                # 計算FFT
                 fft_data = fft(windowed)
                 freqs = fftfreq(len(data), 1/self.sample_rate)
                 
-                # 使用Numba優化的功率譜計算
-                psd = power_spectrum_numba(fft_data)
+                # 使用Numba優化的功率譜計算並應用補償
+                psd = power_spectrum_numba(fft_data) * compensation_factor
                 
                 # 只取正頻率
                 positive_freqs = freqs[:len(freqs)//2]
@@ -114,10 +212,25 @@ class EEGProcessor:
                 return positive_freqs, positive_psd
             else:
                 # 回退到標準NumPy實現
-                windowed = data * np.hanning(len(data))
+                if window_type == 'hanning':
+                    windowed = data * np.hanning(len(data))
+                    compensation_factor = 2.0 if compensation_enabled else 1.0
+                elif window_type == 'hamming':
+                    windowed = data * np.hamming(len(data))
+                    compensation_factor = 1.85 if compensation_enabled else 1.0
+                elif window_type == 'blackman':
+                    windowed = data * np.blackman(len(data))
+                    compensation_factor = 2.8 if compensation_enabled else 1.0
+                elif window_type == 'rectangular':
+                    windowed = data  # 無窗函數
+                    compensation_factor = 1.0
+                else:
+                    windowed = data * np.hanning(len(data))
+                    compensation_factor = 2.0 if compensation_enabled else 1.0
+                
                 fft_data = fft(windowed)
                 freqs = fftfreq(len(data), 1/self.sample_rate)
-                psd = np.abs(fft_data) ** 2
+                psd = (np.abs(fft_data) ** 2) * compensation_factor
                 
                 positive_freqs = freqs[:len(freqs)//2]
                 positive_psd = psd[:len(psd)//2]

@@ -49,6 +49,69 @@ PROCESSING_CONFIG = {
     'signal_quality_poor_threshold': 50.0,  # 小於此值為差品質
 }
 
+# 信號預處理配置 - 更貼近原始EEG信號的設定
+PREPROCESSING_CONFIG = {
+    # 預處理模式: 'minimal', 'standard', 'full'
+    'mode': 'minimal',
+    
+    # 最小預處理模式 - 保持最接近原始信號
+    'minimal': {
+        'description': 'Minimal preprocessing for raw EEG signal analysis',
+        'dc_removal': True,              # 移除DC偏移 (推薦保留)
+        'highpass_cutoff': 0.5,          # 高通濾波截止頻率 (Hz)
+        'powerline_notch': False,        # 電力線陷波濾波 (可選)
+        'bandpass_filter': False,        # 帶通濾波 (關閉以保持原始性)
+        'normalization': False,          # Z-score標準化 (關閉以保持絕對電壓值)
+        'artifact_removal': False,       # 偽影自動移除 (關閉)
+        'window_compensation': True,     # 窗函數能量補償
+        'preserve_units': True           # 保持μV單位
+    },
+    
+    # 標準預處理模式 - 平衡原始性與噪聲抑制
+    'standard': {
+        'description': 'Standard preprocessing with basic noise reduction',
+        'dc_removal': True,
+        'highpass_cutoff': 0.5,
+        'powerline_notch': True,         # 啟用電力線濾波
+        'bandpass_filter': True,
+        'bandpass_low': 0.5,
+        'bandpass_high': 50.0,
+        'normalization': False,          # 仍不標準化
+        'artifact_removal': False,
+        'window_compensation': True,
+        'preserve_units': True
+    },
+    
+    # 完整預處理模式 - 最大噪聲抑制 (保留原有邏輯)
+    'full': {
+        'description': 'Full preprocessing with maximum noise reduction',
+        'dc_removal': True,
+        'highpass_cutoff': 1.0,
+        'powerline_notch': True,
+        'bandpass_filter': True,
+        'bandpass_low': 1.0,
+        'bandpass_high': 50.0,
+        'normalization': True,           # 只在此模式啟用標準化
+        'artifact_removal': True,
+        'window_compensation': True,
+        'preserve_units': False          # 標準化後單位會改變
+    },
+    
+    # 濾波器參數
+    'filter_params': {
+        'butter_order': 4,               # 巴特沃茲濾波器階數
+        'notch_order': 2,                # 陷波濾波器階數
+        'notch_q_factor': 30             # 陷波濾波器品質因子
+    },
+    
+    # 窗函數設定 
+    'windowing': {
+        'type': 'hanning',               # 窗函數類型
+        'compensation_factor': 2.0,      # Hanning窗能量補償係數
+        'alternative_windows': ['hamming', 'blackman', 'rectangular']
+    }
+}
+
 # FFT測試資料設定
 FFT_TEST_DATA_CONFIG = {
     'amplitudes': {
@@ -70,9 +133,7 @@ FFT_TEST_DATA_CONFIG = {
 
 # FFT計算方法配置
 FFT_CALCULATION_CONFIG = {
-    'mode': 'power'
-            ''
-            '',  # 'power' 或 'waveform'
+    'mode': 'power',  # 'power' 或 'waveform'
     'power_method': {
         'description': 'Display frequency band power values',
         'frequency_bands': {
@@ -82,7 +143,7 @@ FFT_CALCULATION_CONFIG = {
             'beta': (13, 30),
             'gamma': (30, 100)
         },
-        'y_axis_label': '',#Power (μV²)
+        'y_axis_label': 'Power (μV²)',
         'data_scaling': 1.0,
         'chart_title': 'FFT Band Power Analysis'
     },
@@ -95,8 +156,8 @@ FFT_CALCULATION_CONFIG = {
             'beta': (12, 35),
             'gamma': (35, 50)
         },
-        'y_axis_label': 'Voltage (mV)',
-        'data_scaling': 1000.0,  # Convert V to mV for display
+        'y_axis_label': 'Voltage (μV)',
+        'data_scaling': 1000000.0,  # Convert V to μV for display
         'chart_title': 'FFT Band Waveform Analysis'
     }
 }

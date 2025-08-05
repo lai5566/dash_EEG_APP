@@ -26,7 +26,7 @@ from services.database_service import EnhancedDatabaseWriter
 from services.mqtt_client import MQTTSensorClient
 from services.audio_recorder import AudioRecorder
 from utils.data_utils import DataValidator, DataProcessor
-from resources.config.app_config import UI_CONFIG, PROCESSING_CONFIG, API_CONFIG
+from resources.config.app_config import UI_CONFIG, PROCESSING_CONFIG, API_CONFIG, PREPROCESSING_CONFIG
 from ui.management_page import ManagementPage
 from ui.sliding_panel import SlidingPanel
 
@@ -363,6 +363,28 @@ class EEGDashboardApp:
                                     clearable=False,
                                     style={'marginBottom': '15px'}
                                 ),
+                            ]),
+
+                            # 信號預處理模式選擇
+                            html.Div([
+                                html.Label("Signal Preprocessing:",
+                                           style={'fontSize': '14px', 'fontWeight': 'bold', 'marginBottom': '5px',
+                                                  'display': 'block'}),
+                                dcc.Dropdown(
+                                    id="preprocessing-mode-dropdown",
+                                    options=[
+                                        {'label': 'Minimal (Raw Signal)', 'value': 'minimal'},
+                                        {'label': 'Standard (Basic Noise Reduction)', 'value': 'standard'},
+                                        {'label': 'Full (Maximum Filtering)', 'value': 'full'}
+                                    ],
+                                    value='minimal',
+                                    clearable=False,
+                                    style={'marginBottom': '15px'}
+                                ),
+                                html.Div(id="preprocessing-info",
+                                         style={'fontSize': '12px', 'color': '#6c757d', 'marginBottom': '15px',
+                                                'padding': '8px', 'backgroundColor': '#f8f9fa', 'borderRadius': '4px',
+                                                'border': '1px solid #dee2e6'})
                             ]),
 
                             # 控制按鈕
@@ -769,7 +791,7 @@ class EEGDashboardApp:
 
                 fig.update_layout(
                     xaxis_title="Time(s)",
-                    yaxis_title="Value",
+                    yaxis_title="Value (0-100)",
                     yaxis_range=[0, 100],
                     height=250,
                     margin=dict(l=30, r=15, t=15, b=30),
@@ -1305,6 +1327,53 @@ class EEGDashboardApp:
 
             except Exception as e:
                 return f"Status Error: {e}", UI_CONFIG['update_interval']
+        
+        @self.app.callback(
+            Output("preprocessing-info", "children"),
+            Input("preprocessing-mode-dropdown", "value"),
+            prevent_initial_call=False
+        )
+        def update_preprocessing_info(selected_mode):
+            """更新預處理模式資訊顯示"""
+            try:
+                # PREPROCESSING_CONFIG已在頂部import
+                
+                if selected_mode in PREPROCESSING_CONFIG:
+                    config = PREPROCESSING_CONFIG[selected_mode]
+                    description = config.get('description', 'No description available')
+                    
+                    # 構建配置詳情
+                    details = []
+                    if config.get('dc_removal', False):
+                        cutoff = config.get('highpass_cutoff', 0.5)
+                        details.append(f"DC removal: {cutoff}Hz highpass")
+                    
+                    if config.get('powerline_notch', False):
+                        details.append("Powerline filtering: 50/60Hz notch")
+                        
+                    if config.get('bandpass_filter', False):
+                        low = config.get('bandpass_low', 0.5)
+                        high = config.get('bandpass_high', 50.0)
+                        details.append(f"Bandpass: {low}-{high}Hz")
+                        
+                    if config.get('normalization', False):
+                        details.append("Z-score normalization")
+                    
+                    if not details:
+                        details.append("No filtering applied - raw signal")
+                    
+                    preserve_units = config.get('preserve_units', True)
+                    units_info = "Preserves μV units" if preserve_units else "Normalized units"
+                    
+                    info_text = f"{description}. {units_info}. Filters: {'; '.join(details)}"
+                    
+                    return info_text
+                else:
+                    return f"Unknown preprocessing mode: {selected_mode}"
+                    
+            except Exception as e:
+                logger.error(f"Error updating preprocessing info: {e}")
+                return "Error loading preprocessing information"
 
     def run(self, host='0.0.0.0', port=8052, debug=False):
         """執行Dash應用程式"""
