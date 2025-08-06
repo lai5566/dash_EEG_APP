@@ -524,37 +524,114 @@ class EEGDashboardApp:
             Input("interval", "n_intervals")
         )
         def update_fft_bands_main(n):
-            """更新FFT頻帶視覺化 (分屏波形圖，流動風景效果)"""
+            """更新FFT頻帶視覺化 - 使用與main_old.py相同的邏輯顯示實時時域波形"""
             start_time = time.time()
 
             try:
-                # 從數據緩衝區獲取 FFT 頻帶歷史數據
-                fft_data = self.data_buffer.get_fft_band_data()
-                band_history = fft_data['band_history']
+                # 獲取當前FFT計算模式
+                from app_config import FFT_CALCULATION_CONFIG
+                current_method = FFT_CALCULATION_CONFIG['mode']
                 
-                # 添加調試日誌
-                total_points = sum(len(history) for history in band_history.values())
-                logger.debug(f"FFT Band數據: {len(band_history)} 個頻帶, 總計 {total_points} 個數據點")
-                if total_points == 0:
-                    logger.warning("FFT Band歷史數據為空 - 可能導致圖表無法顯示")
-
-                # 如果沒有啟用模擬數據且沒有有效數據，顯示提示訊息
-                if not USE_MOCK_DATA:
+                if current_method == 'simple_fft_bands':
+                    # Simple FFT Bands模式：直接顯示實時時域波形 (與main_old.py一致)
+                    waveform_data = self.data_buffer.get_fft_band_waveforms()
+                    current_waveforms = waveform_data['current_waveforms']
+                    
+                    # 檢查是否有有效的波形數據
                     has_valid_data = False
-                    for history in band_history.values():
-                        if len(history) > 0:
-                            # 檢查是否有非零的有效數據
-                            if any(power > 0 for _, power in history):
-                                has_valid_data = True
-                                break
+                    for waveform in current_waveforms.values():
+                        if len(waveform) > 0 and np.any(waveform != 0):
+                            has_valid_data = True
+                            break
                     
                     if not has_valid_data:
                         return go.Figure().add_annotation(
-                            text="No EEG data available. Mock data is disabled.<br>Connect EEG device to view real-time FFT analysis.",
+                            text="No EEG waveform data available.<br>Connect EEG device to view real-time FFT band analysis.",
                             showarrow=False, x=0.5, y=0.5,
                             xref="paper", yref="paper",
                             font=dict(size=16, color="gray")
                         )
+                    
+                    # 建立多個子圖的折線圖 (與main_old.py相同的佈局)
+                    band_names = list(self.bands.keys())
+                    fig = make_subplots(
+                        rows=len(band_names),
+                        cols=1,
+                        shared_xaxes=True,
+                        subplot_titles=band_names,
+                        vertical_spacing=0.05
+                    )
+                    
+                    # 為每個頻帶顯示實時時域波形
+                    for i, (band_name, band_color) in enumerate(zip(band_names, self.band_colors.values()), start=1):
+                        band_key = band_name.split(' ')[0].lower()
+                        
+                        if band_key in current_waveforms:
+                            waveform = current_waveforms[band_key]
+                            
+                            if len(waveform) > 0:
+                                # 創建時間軸 (與main_old.py完全一致)
+                                FS = 256  # 採樣率
+                                t = np.arange(len(waveform)) / FS
+                                
+                                # 直接顯示時域波形 (與main_old.py一致)
+                                fig.add_trace(
+                                    go.Scatter(
+                                        x=t, 
+                                        y=waveform,
+                                        mode="lines",
+                                        line=dict(color=band_color, width=2),
+                                        showlegend=False,
+                                        name=band_name
+                                    ),
+                                    row=i, col=1
+                                )
+                            else:
+                                # 沒有數據時顯示零線
+                                fig.add_trace(
+                                    go.Scatter(
+                                        x=[0, 2], 
+                                        y=[0, 0],
+                                        mode="lines",
+                                        line=dict(color="gray", width=1),
+                                        showlegend=False,
+                                        name=band_name
+                                    ),
+                                    row=i, col=1
+                                )
+                    
+                    # 設定與main_old.py一致的圖表樣式
+                    fig.update_layout(
+                        height=150 * len(band_names), 
+                        showlegend=False,
+                        title="FFT Band Analysis (Simple Mode)"
+                    )
+                    fig.update_xaxes(title_text="Time (s)")
+                    fig.update_yaxes(title_text="Voltage (V)")
+                    
+                    return fig
+                
+                else:
+                    # 其他模式：保持原有邏輯 (歷史時間序列顯示)
+                    fft_data = self.data_buffer.get_fft_band_data()
+                    band_history = fft_data['band_history']
+                    
+                    # 檢查數據有效性
+                    if not USE_MOCK_DATA:
+                        has_valid_data = False
+                        for history in band_history.values():
+                            if len(history) > 0:
+                                if any(power > 0 for _, power in history):
+                                    has_valid_data = True
+                                    break
+                        
+                        if not has_valid_data:
+                            return go.Figure().add_annotation(
+                                text="No EEG data available. Mock data is disabled.<br>Connect EEG device to view real-time FFT analysis.",
+                                showarrow=False, x=0.5, y=0.5,
+                                xref="paper", yref="paper",
+                                font=dict(size=16, color="gray")
+                            )
 
                 # 建立多個子圖的折線圖
                 band_names = list(self.bands.keys())

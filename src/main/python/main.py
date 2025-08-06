@@ -368,6 +368,8 @@ class EEGApplication:
             # 處理 FFT 頻帶功率數據並存儲到緩衝區
             if 'band_powers' in processed_data:
                 band_powers = processed_data['band_powers']
+                fft_bands = processed_data.get('fft_bands', {})
+                
                 # 基於數據可用性而非配置標誌的判斷邏輯
                 if band_powers and isinstance(band_powers, dict):
                     # 檢查是否有實際的頻帶功率數據
@@ -376,6 +378,10 @@ class EEGApplication:
                     
                     if has_valid_data:
                         self.eeg_buffer.add_fft_band_powers(band_powers)
+                        
+                        # 對於simple_fft_bands模式，同時傳遞時域波形數據
+                        if fft_bands and isinstance(fft_bands, dict):
+                            self.eeg_buffer.add_fft_band_waveforms(fft_bands)
             
             # 處理完整頻譜數據並存儲到緩衝區 (用於瀑布圖顯示)
             if 'spectrum_freqs' in processed_data and 'spectrum_powers' in processed_data:

@@ -55,6 +55,15 @@ class EnhancedCircularBuffer:
             'beta': 0.0,
             'gamma': 0.0
         }
+        
+        # FFT頻帶時域波形數據 (用於simple_fft_bands模式)
+        self.current_fft_waveforms = {
+            'delta': np.array([]),
+            'theta': np.array([]),
+            'alpha': np.array([]),
+            'beta': np.array([]),
+            'gamma': np.array([])
+        }
 
         # 完整頻譜資料 (用於瀑布圖/頻譜圖顯示)
         self.spectral_history = deque(maxlen=60)  # 保存60個時間點的頻譜數據
@@ -170,6 +179,23 @@ class EnhancedCircularBuffer:
                     self.current_fft_bands[band_name] = power
                     self.fft_band_history[band_name].append((timestamp, power))
 
+    def add_fft_band_waveforms(self, waveforms: Dict[str, np.ndarray]):
+        """新增FFT頻帶時域波形數據 (用於simple_fft_bands模式)"""
+        with self.lock:
+            timestamp = time.time()
+            
+            # 當收到第一個真實數據時，清空初始假數據
+            if not USE_MOCK_DATA and self._has_initial_fake_data:
+                for band_name in self.current_fft_waveforms:
+                    self.current_fft_waveforms[band_name] = np.array([])
+                # 標記假資料已清空
+                self._has_initial_fake_data = False
+            
+            # 更新當前時域波形數據
+            for band_name, waveform in waveforms.items():
+                if band_name in self.current_fft_waveforms:
+                    self.current_fft_waveforms[band_name] = waveform.copy()
+
     def add_spectral_data(self, freqs: np.ndarray, powers: np.ndarray):
         """新增完整頻譜資料用於瀑布圖顯示"""
         with self.lock:
@@ -267,6 +293,16 @@ class EnhancedCircularBuffer:
                 'band_history': {
                     band_name: list(history) 
                     for band_name, history in self.fft_band_history.items()
+                }
+            }
+
+    def get_fft_band_waveforms(self) -> Dict:
+        """取得FFT頻帶時域波形數據 (用於simple_fft_bands模式)"""
+        with self.lock:
+            return {
+                'current_waveforms': {
+                    band_name: waveform.copy() 
+                    for band_name, waveform in self.current_fft_waveforms.items()
                 }
             }
 
