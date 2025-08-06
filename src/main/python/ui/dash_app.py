@@ -1244,7 +1244,7 @@ class EEGDashboardApp:
 
                         # 開始音頻錄音
                         if self.audio_recorder:
-                            success = self.audio_recorder.start_recording(recording_group_id)
+                            success = self.audio_recorder.start_recording(recording_group_id, self.db_writer)
                             if success:
                                 self.experiment_state.update({
                                     'current_recording_group_id': recording_group_id,
@@ -1346,7 +1346,7 @@ class EEGDashboardApp:
                 if button_id == "start-recording-btn" and start_clicks:
                     if not status['is_recording']:
                         group_id = str(uuid.uuid4())[:8]
-                        success = self.audio_recorder.start_recording(group_id)
+                        success = self.audio_recorder.start_recording(group_id, self.db_writer)
                         if success:
                             return f"🔴 Recording started | Group ID: {group_id}"
                         else:

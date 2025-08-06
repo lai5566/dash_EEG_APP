@@ -301,8 +301,26 @@ class EEGApplication:
                 data_copy = {k: v for k, v in data.items() if k != 'timestamp'}
                 self.db_writer.add_data_to_aggregator(timestamp, current_group_id, **data_copy)
                 logger.debug(f"數據已添加到聚合器 - Session: {self.db_writer.current_session_id}, Group: {current_group_id}")
+                
+                # 驗證recording_group_id關聯
+                if current_group_id:
+                    logger.debug(f"Recording group ID successfully associated: {current_group_id}")
+                else:
+                    logger.debug("No active recording - unified_records will have NULL recording_group_id")
             else:
-                logger.warning(f"無活動會話 - 數據未添加到unified_records。數據鍵: {list(data.keys())}")
+                # 如果正在錄音但沒有會話，這是異常情況
+                if current_group_id:
+                    logger.error(f"Recording active (group: {current_group_id}) but no session - creating default session")
+                    session_id = self.db_writer.create_default_session_if_needed()
+                    if session_id:
+                        # 重新處理數據
+                        data_copy = {k: v for k, v in data.items() if k != 'timestamp'}
+                        self.db_writer.add_data_to_aggregator(timestamp, current_group_id, **data_copy)
+                        logger.info(f"Data added to aggregator with auto-created session: {session_id}")
+                    else:
+                        logger.error("Failed to create session for recording data")
+                else:
+                    logger.warning(f"無活動會話 - 數據未添加到unified_records。數據鍵: {list(data.keys())}")
             
         except Exception as e:
             logger.error(f"Error processing serial data: {e}")

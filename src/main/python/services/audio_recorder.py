@@ -161,7 +161,7 @@ class AudioRecorder:
             logger.error(f"❌ Device test failed: {e}")
             return False
             
-    def start_recording(self, group_id: Optional[str] = None) -> bool:
+    def start_recording(self, group_id: Optional[str] = None, db_writer=None) -> bool:
         """開始錄製音頻"""
         if not AUDIO_AVAILABLE:
             logger.error("Audio modules not installed, cannot record")
@@ -170,6 +170,16 @@ class AudioRecorder:
         if self.is_recording:
             logger.warning("Already recording")
             return False
+            
+        # 確保有活動會話以支援recording_group_id關聯
+        if db_writer and db_writer.current_session_id is None:
+            logger.info("No active session detected, creating default session for recording...")
+            session_id = db_writer.create_default_session_if_needed()
+            if session_id:
+                logger.info(f"Auto-created session {session_id} for recording")
+            else:
+                logger.error("Failed to create session for recording")
+                return False
             
         try:
             # 如果未提供則生成群組ID

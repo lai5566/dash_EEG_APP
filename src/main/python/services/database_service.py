@@ -812,6 +812,40 @@ class EnhancedDatabaseWriter:
             print(f"Error getting ambient sounds: {e}")
             return []
 
+    def create_default_session_if_needed(self) -> str:
+        """如果沒有活動會話，創建預設實驗會話"""
+        if self.current_session_id is not None:
+            return self.current_session_id
+            
+        # 創建預設受試者（如果不存在）
+        default_subject_id = "default_user"
+        try:
+            # 嘗試添加預設受試者（如果已存在會失敗但不影響功能）
+            self.add_subject(
+                subject_id=default_subject_id,
+                gender="Other",
+                age=0,
+                researcher_name="Auto-generated",
+                notes="Auto-created for recording without explicit session"
+            )
+        except Exception:
+            pass  # 受試者可能已存在
+            
+        # 創建新的實驗會話
+        session_id = self.start_experiment_session(
+            subject_id=default_subject_id,
+            eye_state="mixed",
+            researcher_name="Auto-generated",
+            notes="Auto-created session for recording functionality"
+        )
+        
+        if session_id:
+            logger.info(f"Auto-created experiment session: {session_id}")
+            return session_id
+        else:
+            logger.error("Failed to create default session")
+            return None
+
     def add_recording_file(self, recording_group_id: str, filename: str, 
                           start_time: float, end_time: float = None, 
                           sample_rate: int = None, file_size: int = None):
