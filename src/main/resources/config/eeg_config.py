@@ -1,12 +1,12 @@
 """EEG配置設定"""
 
 # 串列埠配置
-SERIAL_PORT = "/dev/tty.usbserial-1410"
+SERIAL_PORT = "/dev/tty.usbserial-11410"
 BAUD_RATE = 57600
 
 # 資料處理
-WINDOW_SIZE = 512
-FS = 512  # 取樣頻率 (修正為實際設備頻率 513.3Hz)
+WINDOW_SIZE = 512   # 統一為main_old.py的窗口大小
+FS = 256  # 統一為main_old.py的採樣率 (實際設備頻率會在串口服務中處理)
 BATCH_SIZE = 100
 
 # 效能設定

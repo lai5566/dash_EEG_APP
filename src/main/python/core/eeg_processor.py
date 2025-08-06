@@ -120,9 +120,14 @@ class EEGProcessor:
         logger.info(f"Filter initialization complete. Active filters: {list(self._filters.keys())}")
         
     def preprocess_signal(self, raw_data: np.ndarray) -> np.ndarray:
-        """根據配置進行最小化的信號預處理，保持更接近原始EEG信號"""
+        """根據配置進行信號預處理，支持無預處理模式"""
         with self.lock:
             try:
+                # 如果是無預處理模式，直接返回原始數據
+                if self.preprocessing_mode == 'none':
+                    logger.debug("No preprocessing applied - using raw signal (none mode)")
+                    return raw_data.copy()
+                
                 processed_data = raw_data.copy()
                 applied_filters = []
                 
@@ -393,6 +398,18 @@ class EEGProcessor:
                 band_powers = self.extract_band_powers(processed_data)
                 # 為了保持向後兼容，仍然計算fft_bands但不使用
                 fft_bands = self.extract_fft_bands(processed_data)
+            elif self.calculation_mode == 'simple_fft_bands':
+                # 簡化FFT頻帶模式：與main_old.py一致，直接顯示時域波形
+                fft_bands = self.extract_fft_bands(processed_data)
+                # 不計算band_powers，直接使用時域波形數據
+                band_powers = {}
+                for band_name, waveform in fft_bands.items():
+                    if len(waveform) > 0:
+                        # 使用波形的平均絕對值作為顯示參考，不做過度縮放
+                        avg_amplitude = np.mean(np.abs(waveform))
+                        band_powers[band_name] = float(avg_amplitude)
+                    else:
+                        band_powers[band_name] = 0.0
             else:  # waveform mode
                 # 波形模式：計算頻帶濾波波形，並從中計算代表性數值
                 fft_bands = self.extract_fft_bands(processed_data)

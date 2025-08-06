@@ -586,10 +586,13 @@ class EEGDashboardApp:
                             # 收集時間數據用於動態範圍計算
                             all_rel_times.extend(rel_times)
                             
-                            # 根據配置應用數據縮放 - 添加錯誤處理
+                            # 根據配置應用數據縮放 - 添加simple_fft_bands模式支持
                             try:
                                 data_scaling = method_config.get('data_scaling', 1.0)
-                                if current_method == 'waveform':
+                                if current_method == 'simple_fft_bands':
+                                    # 簡化FFT頻帶模式：不應用縮放，直接顯示原始數值 (與main_old.py一致)
+                                    powers_scaled = [p for p in powers]
+                                elif current_method == 'waveform':
                                     # 波形模式：數據已在處理器中應用了縮放
                                     powers_scaled = [p for p in powers]
                                 else:

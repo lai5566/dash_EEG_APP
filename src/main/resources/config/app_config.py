@@ -7,8 +7,8 @@ APP_CONFIG = {
     'name': 'EEG Dashboard Application',
     'version': '1.0.0',
     'buffer_size': 512,  # 減少緩衝區大小以適應Pi4
-    'sample_rate': 512,
-    'window_size': 256,   # 減少窗口大小以提高性能
+    'sample_rate': 256,   # 統一為main_old.py的採樣率
+    'window_size': 512,   # 統一為main_old.py的窗口大小
     'max_recording_duration': 3600,  # 1小時
 }
 
@@ -19,8 +19,8 @@ API_CONFIG = {
     'debug': False,
     'threaded': True,
     'buffer_size': 512,  # 與APP_CONFIG保持一致
-    'sample_rate': 512,
-    'window_size': 512,   # 與APP_CONFIG保持一致
+    'sample_rate': 256,  # 統一為main_old.py的採樣率
+    'window_size': 512,  # 統一為main_old.py的窗口大小
 }
 
 # 資料庫設定
@@ -51,8 +51,20 @@ PROCESSING_CONFIG = {
 
 # 信號預處理配置 - 更貼近原始EEG信號的設定
 PREPROCESSING_CONFIG = {
-    # 預處理模式: 'minimal', 'standard', 'full'
-    'mode': 'minimal',
+    # 預處理模式: 'none', 'minimal', 'standard', 'full'
+    'mode': 'none',
+    
+    # 無預處理模式 - 完全不處理原始信號 (與main_old.py一致)
+    'none': {
+        'description': 'No preprocessing, raw signal only (like main_old.py)',
+        'dc_removal': False,
+        'powerline_notch': False,
+        'bandpass_filter': False,
+        'normalization': False,
+        'artifact_removal': False,
+        'window_compensation': False,
+        'preserve_units': True
+    },
     
     # 最小預處理模式 - 保持最接近原始信號
     'minimal': {
@@ -62,8 +74,8 @@ PREPROCESSING_CONFIG = {
         'powerline_notch': False,        # 電力線陷波濾波 (可選)
         'bandpass_filter': False,        # 帶通濾波 (關閉以保持原始性)
         'normalization': False,          # Z-score標準化 (關閉以保持絕對電壓值)
-        'artifact_removal': False,       # 偽影自動移除 (關閉)
-        'window_compensation': True,     # 窗函數能量補償
+        'artifact_removal': True,       # 偽影自動移除 (關閉)
+        'window_compensation': False,     # 窗函數能量補償
         'preserve_units': True           # 保持μV單位
     },
     
@@ -133,7 +145,7 @@ FFT_TEST_DATA_CONFIG = {
 
 # FFT計算方法配置
 FFT_CALCULATION_CONFIG = {
-    'mode': 'power',  # 'power' 或 'waveform'
+    'mode': 'simple_fft_bands',  # 'power', 'waveform', 或 'simple_fft_bands'
     'power_method': {
         'description': 'Display frequency band power values',
         'frequency_bands': {
@@ -159,6 +171,19 @@ FFT_CALCULATION_CONFIG = {
         'y_axis_label': 'Voltage (μV)',
         'data_scaling': 1000000.0,  # Convert V to μV for display
         'chart_title': 'FFT Band Waveform Analysis'
+    },
+    'simple_fft_bands_method': {
+        'description': 'Simple FFT band filtering like main_old.py (time domain display)',
+        'frequency_bands': {
+            'delta': (0.5, 4),
+            'theta': (4, 8),
+            'alpha': (8, 12),
+            'beta': (12, 35),
+            'gamma': (35, 50)
+        },
+        'y_axis_label': 'Voltage (V)',
+        'data_scaling': 1.0,  # No scaling, raw voltage values like main_old.py
+        'chart_title': 'FFT Band Analysis (Simple Mode)'
     }
 }
 
@@ -184,7 +209,7 @@ PLATFORM_CONFIG = {
 }
 
 # 全域狀態
-USE_MOCK_DATA = True  # 暫時啟用以測試ASIC功能
+USE_MOCK_DATA = False  # 暫時啟用以測試ASIC功能
 RECORDING_STATE = {
     'is_recording': False,
     'current_group_id': None,
