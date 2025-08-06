@@ -59,34 +59,6 @@ class EEGApplication:
         self.last_log_time = {}
         self.log_interval = 5.0  # 每5秒最多記錄一次相同警告
         
-    def _create_default_session(self):
-        """創建預設會話以防止資料遺失"""
-        try:
-            if not self.db_writer.current_session_id:
-                # 創建自動會話以確保資料可以正常流入unified_records
-                import time
-                timestamp = int(time.time())
-                default_session_id = f"auto_session_{timestamp}"
-                
-                session_id = self.db_writer.start_experiment_session(
-                    subject_id=default_session_id,
-                    eye_state="open",
-                    ambient_sound_id=None,
-                    researcher_name="System",
-                    notes="Auto-created default session to prevent data loss on application startup"
-                )
-                
-                if session_id:
-                    logger.info(f"Auto-created default session: {session_id}")
-                    logger.info("Data will now flow to unified_records automatically")
-                else:
-                    logger.error("Failed to create default session - data loss may occur")
-            else:
-                logger.info(f"Existing session found: {self.db_writer.current_session_id}")
-                
-        except Exception as e:
-            logger.error(f"Error creating default session: {e}")
-            logger.warning("Application will continue but data may not reach unified_records")
         
     def initialize(self):
         """初始化應用程式組件"""
@@ -108,9 +80,7 @@ class EEGApplication:
             # 初始化資料庫寫入器
             self.db_writer = EnhancedDatabaseWriter(DATABASE_PATH)
             logger.info(f"Database writer initialized: {DATABASE_PATH}")
-            
-            # 自動創建預設會話以防止資料遺失
-            self._create_default_session()
+            logger.info("Data recording will start when experiment session is manually started")
             
             # 初始化處理器
             self.processor = RealTimeEEGProcessor(
@@ -285,12 +255,14 @@ class EEGApplication:
                     signal_quality=data.get('signal_quality')
                 )
                 
-                self.db_writer.add_cognitive_data(
-                    timestamp,
-                    data.get('attention', 0),
-                    data.get('meditation', 0),
-                    data.get('signal_quality', 200)
-                )
+                # 只在有活動會話時才記錄認知資料到資料庫
+                if self.db_writer.current_session_id:
+                    self.db_writer.add_cognitive_data(
+                        timestamp,
+                        data.get('attention', 0),
+                        data.get('meditation', 0),
+                        data.get('signal_quality', 200)
+                    )
             
             # 處理ASIC頻帶資料
             if 'asic_bands' in data:
