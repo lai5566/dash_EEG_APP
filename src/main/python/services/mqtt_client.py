@@ -100,6 +100,22 @@ class MQTTSensorClient:
     def _handle_sensor_data(self, data: Dict[str, Any], timestamp: float):
         """處理感測器資料"""
         try:
+            # 確保有預設會話以防止資料遺失
+            if not self.db_writer.current_session_id:
+                default_session_id = f"mqtt_auto_session_{int(timestamp)}"
+                session_id = self.db_writer.start_experiment_session(
+                    subject_id=default_session_id,
+                    eye_state="open",
+                    ambient_sound_id=None,
+                    researcher_name="MQTT_System",
+                    notes="Auto-created session for MQTT sensor data"
+                )
+                if session_id:
+                    logger.info(f"MQTT auto-created session: {session_id}")
+                else:
+                    logger.error("MQTT failed to create auto session")
+                    return
+            
             # 提取感測器數值
             temperature = data.get('temperature', 0.0)
             humidity = data.get('humidity', 0.0)
@@ -119,14 +135,25 @@ class MQTTSensorClient:
             # 儲存至資料庫
             self.db_writer.add_sensor_data(timestamp, temperature, humidity, light)
             
+            # 將MQTT感測器資料也添加到統一記錄聚合器 (與main.py邏輯一致)
+            if self.db_writer.current_session_id:
+                # 構建與main.py相同格式的資料字典
+                mqtt_data = {
+                    'temperature': temperature,
+                    'humidity': humidity,
+                    'light': light
+                }
+                self.db_writer.add_data_to_aggregator(timestamp, None, **mqtt_data)
+                logger.debug(f"MQTT sensor data added to aggregator - Session: {self.db_writer.current_session_id}")
+            
             # 如果設定則呼叫回調
             if self.on_sensor_data_callback:
                 self.on_sensor_data_callback(temperature, humidity, light, timestamp)
                 
-            logger.debug(f"📊 Sensor data updated: T={temperature}°C, H={humidity}%, L={light}")
+            logger.debug(f"📊 MQTT Sensor data updated: T={temperature}°C, H={humidity}%, L={light}")
             
         except Exception as e:
-            logger.error(f"Error handling sensor data: {e}")
+            logger.error(f"Error handling MQTT sensor data: {e}")
             
     def _handle_eeg_data(self, data: Dict[str, Any], timestamp: float):
         """處理來自MQTT的EEG資料"""
