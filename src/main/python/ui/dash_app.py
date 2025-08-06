@@ -213,7 +213,7 @@ class EEGDashboardApp:
                                           config={'displayModeBar': False}),
                             ], style={'background': 'white', 'borderRadius': '8px',
                                       'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                                      'padding': '15px', 'marginBottom': '15px'}),
+                                      'padding': '15px', 'marginBottom': '25px'}),
                         ], style={'flex': '1', 'padding': '5px', 'minWidth': '300px'}),
                     ], style={'display': 'flex', 'flexWrap': 'wrap', 'margin': '-5px'}),
 
@@ -559,7 +559,7 @@ class EEGDashboardApp:
                         cols=1,
                         shared_xaxes=True,
                         subplot_titles=band_names,
-                        vertical_spacing=0.05
+                        vertical_spacing=0.08
                     )
                     
                     # 為每個頻帶顯示實時時域波形
@@ -602,9 +602,10 @@ class EEGDashboardApp:
                     
                     # 設定與main_old.py一致的圖表樣式
                     fig.update_layout(
-                        height=150 * len(band_names), 
+                        height=max(300, 120 * len(band_names)), 
                         showlegend=False,
-                        title="FFT Band Analysis (Simple Mode)"
+                        title="FFT Band Analysis (Simple Mode)",
+                        margin=dict(l=50, r=20, t=60, b=80)
                     )
                     fig.update_xaxes(title_text="Time (s)")
                     fig.update_yaxes(title_text="Voltage (V)")
@@ -640,7 +641,7 @@ class EEGDashboardApp:
                     cols=1,
                     shared_xaxes=True,
                     subplot_titles=band_names,
-                    vertical_spacing=0.05
+                    vertical_spacing=0.08
                 )
 
                 # 收集所有時間數據以計算動態範圍
@@ -738,7 +739,7 @@ class EEGDashboardApp:
                 
                 fig.update_layout(
                     height=UI_CONFIG['chart_height'],
-                    margin=dict(l=40, r=15, t=40, b=60),
+                    margin=dict(l=50, r=20, t=60, b=80),
                     plot_bgcolor='white',
                     showlegend=False
                 )
