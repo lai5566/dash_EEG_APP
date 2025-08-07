@@ -444,6 +444,9 @@ class EnhancedDatabaseWriter:
 
         # 建立索引
         self._create_indexes(cur)
+        
+        # 執行資料庫遷移
+        self._perform_migrations(cur)
 
         conn.commit()
         return conn
@@ -467,6 +470,24 @@ class EnhancedDatabaseWriter:
         
         for index_sql in indexes:
             cur.execute(index_sql)
+    
+    def _perform_migrations(self, cur):
+        """執行資料庫遷移以添加新欄位"""
+        try:
+            # 檢查 unified_records 表是否有 eye_state 欄位
+            cur.execute("PRAGMA table_info(unified_records)")
+            columns = [column[1] for column in cur.fetchall()]
+            
+            # 如果沒有 eye_state 欄位，則添加它
+            if 'eye_state' not in columns:
+                cur.execute("""
+                    ALTER TABLE unified_records 
+                    ADD COLUMN eye_state TEXT CHECK(eye_state IN ('open', 'closed', 'mixed'))
+                """)
+                logger.info("Migration: Added eye_state column to unified_records table")
+                
+        except Exception as e:
+            logger.error(f"Error during database migration: {e}")
 
     def add_raw_data(self, timestamp: float, voltage: float):
         """新增原始資料（已停用 - 使用 UnifiedRecordAggregator）"""
