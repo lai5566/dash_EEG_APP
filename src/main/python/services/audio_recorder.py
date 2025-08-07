@@ -172,14 +172,17 @@ class AudioRecorder:
             return False
             
         # 確保有活動會話以支援recording_group_id關聯
-        if db_writer and db_writer.current_session_id is None:
-            logger.info("No active session detected, creating default session for recording...")
-            session_id = db_writer.create_default_session_if_needed()
-            if session_id:
-                logger.info(f"Auto-created session {session_id} for recording")
+        if db_writer:
+            if db_writer.current_session_id is None:
+                logger.info("No active session detected, creating default session for recording...")
+                session_id = db_writer.create_default_session_if_needed()
+                if session_id:
+                    logger.info(f"Auto-created session {session_id} for recording")
+                else:
+                    logger.error("Failed to create session for recording")
+                    return False
             else:
-                logger.error("Failed to create session for recording")
-                return False
+                logger.info(f"Recording starting with active session: {db_writer.current_session_id}")
             
         try:
             # 如果未提供則生成群組ID

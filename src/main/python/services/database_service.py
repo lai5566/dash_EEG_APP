@@ -840,7 +840,9 @@ class EnhancedDatabaseWriter:
         )
         
         if session_id:
-            logger.info(f"Auto-created experiment session: {session_id}")
+            # 確保設置為當前會話
+            self.set_current_session(session_id)
+            logger.info(f"Auto-created and set current session: {session_id}")
             return session_id
         else:
             logger.error("Failed to create default session")

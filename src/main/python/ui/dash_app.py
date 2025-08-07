@@ -1192,6 +1192,12 @@ class EEGDashboardApp:
                         )
 
                         if session_id:
+                            # 驗證session同步
+                            if self.db_writer.current_session_id != session_id:
+                                logger.error(f"Session sync mismatch - UI: {session_id}, DB: {self.db_writer.current_session_id}")
+                                self.db_writer.set_current_session(session_id)
+                                logger.info(f"Synchronized db_writer session to: {session_id}")
+                            
                             self.experiment_state.update({
                                 'current_session_id': session_id,
                                 'experiment_running': True,
@@ -1220,6 +1226,12 @@ class EEGDashboardApp:
                         )
 
                         if session_id:
+                            # 驗證session同步
+                            if self.db_writer.current_session_id != session_id:
+                                logger.error(f"Session sync mismatch - UI: {session_id}, DB: {self.db_writer.current_session_id}")
+                                self.db_writer.set_current_session(session_id)
+                                logger.info(f"Synchronized db_writer session to: {session_id}")
+                            
                             self.experiment_state.update({
                                 'current_session_id': session_id,
                                 'experiment_running': True,
@@ -1238,8 +1250,21 @@ class EEGDashboardApp:
                         return "❌ Please start the experiment first"
 
                     if not self.experiment_state['recording_active']:
-                        # 生成錄音群組ID
-                        session_id = self.experiment_state['current_session_id']
+                        # 驗證並同步session狀態
+                        ui_session_id = self.experiment_state['current_session_id']
+                        db_session_id = self.db_writer.current_session_id
+                        
+                        if ui_session_id != db_session_id:
+                            logger.error(f"Session state mismatch before recording - UI: {ui_session_id}, DB: {db_session_id}")
+                            if ui_session_id and not db_session_id:
+                                self.db_writer.set_current_session(ui_session_id)
+                                logger.info(f"Synchronized db_writer to UI session: {ui_session_id}")
+                            elif db_session_id and not ui_session_id:
+                                self.experiment_state['current_session_id'] = db_session_id
+                                logger.info(f"Synchronized UI to db_writer session: {db_session_id}")
+                        
+                        # 生成錄音群組ID - 使用同步後的session_id
+                        session_id = self.db_writer.current_session_id or ui_session_id
                         recording_group_id = f"{session_id}_rec_{int(time.time())}"
 
                         # 開始音頻錄音

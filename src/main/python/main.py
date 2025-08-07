@@ -304,7 +304,7 @@ class EEGApplication:
                 
                 # 驗證recording_group_id關聯
                 if current_group_id:
-                    logger.debug(f"Recording group ID successfully associated: {current_group_id}")
+                    logger.info(f"✅ Recording group ID successfully associated: {current_group_id} with session: {self.db_writer.current_session_id}")
                 else:
                     logger.debug("No active recording - unified_records will have NULL recording_group_id")
             else:
