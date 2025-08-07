@@ -106,7 +106,7 @@ class UnifiedRecordAggregator:
             return False
         return (current_timestamp - self.record_start_time) >= self.aggregation_interval
         
-    def flush_record(self, session_id: str, recording_group_id: str = None):
+    def flush_record(self, session_id: str, recording_group_id: str = None, eye_state: str = None):
         """flush並返回聚合的統一記錄"""
         if self.record_start_time is None:
             return None
@@ -116,7 +116,8 @@ class UnifiedRecordAggregator:
             'session_id': session_id,
             'timestamp': self.record_start_time,
             'timestamp_local': TimeUtils.unix_to_local_time(self.record_start_time),
-            'recording_group_id': recording_group_id
+            'recording_group_id': recording_group_id,
+            'eye_state': eye_state
         }
         
         # 處理電壓數據 - 確保有512個樣本 (修復引用問題)
@@ -401,6 +402,7 @@ class EnhancedDatabaseWriter:
                 timestamp REAL NOT NULL,
                 timestamp_local TEXT NOT NULL,
                 recording_group_id TEXT,
+                eye_state TEXT CHECK(eye_state IN ('open', 'closed', 'mixed')),
                 attention INTEGER,
                 meditation INTEGER,
                 signal_quality INTEGER,
@@ -525,9 +527,13 @@ class EnhancedDatabaseWriter:
                 current_group_id = recording_group_id or data.get('recording_group_id')
                 logger.debug(f"觸發聚合器flush - timestamp: {timestamp}, group_id: {current_group_id}")
                 
+                # 獲取當前會話的眼睛狀態
+                current_eye_state = self.get_session_eye_state(self.current_session_id)
+                
                 flushed_record = self.unified_aggregator.flush_record(
                     self.current_session_id, 
-                    current_group_id
+                    current_group_id,
+                    current_eye_state
                 )
                 
                 if flushed_record:
@@ -539,6 +545,7 @@ class EnhancedDatabaseWriter:
                         flushed_record['timestamp'],
                         flushed_record['timestamp_local'],
                         flushed_record.get('recording_group_id'),
+                        flushed_record.get('eye_state'),
                         flushed_record.get('attention'),
                         flushed_record.get('meditation'),
                         flushed_record.get('signal_quality'),
@@ -591,6 +598,9 @@ class EnhancedDatabaseWriter:
             print("Warning: No current session set for unified record")
             return
             
+        # 獲取當前會話的眼睛狀態
+        eye_state = kwargs.get('eye_state') or self.get_session_eye_state(self.current_session_id)
+            
         timestamp_local = TimeUtils.unix_to_local_time(timestamp)
         with self.lock:
             record = (
@@ -598,6 +608,7 @@ class EnhancedDatabaseWriter:
                 timestamp,
                 timestamp_local,
                 recording_group_id,
+                eye_state,
                 kwargs.get('attention'),
                 kwargs.get('meditation'),
                 kwargs.get('signal_quality'),
@@ -949,11 +960,11 @@ class EnhancedDatabaseWriter:
                         
                         cur.executemany("""
                             INSERT INTO unified_records 
-                            (session_id, timestamp, timestamp_local, recording_group_id, attention, meditation, signal_quality, 
+                            (session_id, timestamp, timestamp_local, recording_group_id, eye_state, attention, meditation, signal_quality, 
                              temperature, humidity, light, blink_intensity, voltage_data,
                              delta_power, theta_power, low_alpha_power, high_alpha_power,
                              low_beta_power, high_beta_power, low_gamma_power, mid_gamma_power)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """, self.unified_buffer)
                         self.unified_buffer.clear()
 
@@ -1084,6 +1095,32 @@ class EnhancedDatabaseWriter:
             
         except Exception as e:
             logger.error(f"Error getting session data for export: {e}")
+            return None
+
+    def get_session_eye_state(self, session_id: str = None) -> str:
+        """獲取指定會話的眼睛狀態"""
+        if session_id is None:
+            session_id = self.current_session_id
+            
+        if session_id is None:
+            return None
+            
+        try:
+            conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            cur = conn.cursor()
+            
+            cur.execute("SELECT eye_state FROM experiment_sessions WHERE session_id = ?", (session_id,))
+            result = cur.fetchone()
+            
+            conn.close()
+            
+            if result:
+                return result[0]
+            else:
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error getting session eye state: {e}")
             return None
 
     def start(self):
